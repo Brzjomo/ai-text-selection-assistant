@@ -20,8 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -197,7 +199,7 @@ data class ApiConfigUiState(
 class ApiConfigViewModel(
     private val userPreferences: UserPreferences
 ) : ViewModel() {
-    private val _uiState = mutableStateOf(ApiConfigUiState())
+    private val _uiState = MutableStateFlow(ApiConfigUiState())
     val uiState: StateFlow<ApiConfigUiState> = _uiState.asStateFlow()
 
     init {

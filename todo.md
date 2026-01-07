@@ -1,7 +1,7 @@
 # AI Text Selection Assistant 开发进度跟踪
 
 **最后更新**: 2026-01-07
-**当前阶段**: 第一阶段原型验证完成
+**当前阶段**: 第二阶段配置管理进行中（Room kapt配置问题已解决，Prompt模板CRUD进行中）
 
 ## 开发阶段概览
 
@@ -49,29 +49,59 @@
    - 继承 `Theme.MaterialComponents.Dialog`
    - 配置窗口浮动、透明背景、背景变暗等属性
 
+#### 第二阶段：配置管理与Prompt系统（部分完成）
+1. **✅ 添加DataStore和Room依赖**
+   - 已添加DataStore Preferences 1.1.1依赖
+   - Room 2.6.1依赖已添加且kapt配置问题已解决
+   - Kotlin序列化 1.7.0已添加
+   - Kotlin协程 1.8.0已添加
+   - Gradle同步成功，构建通过
+
+2. **✅ 实现DataStore API配置存储**
+   - 创建 `UserPreferences` 类 (`data/local/UserPreferences.kt`)
+   - 实现 `ApiConfig` 数据模型
+   - 完成API密钥、Base URL、模型等配置的存储读取
+
+3. **✅ 实现API配置界面**
+   - 创建 `ApiConfigScreen` Compose界面 (`ui/main/ApiConfigScreen.kt`)
+   - 实现完整的API配置表单（API Key、Base URL、模型、流式输出等）
+   - 创建 `ApiConfigViewModel` 管理配置状态
+   - 集成DataStore数据流
+
 ### 🔄 进行中的任务
 
-#### 第一阶段：原型验证（测试）
-1. **测试跨应用文本选择功能**
-   - 构建APK并安装到虚拟设备
-   - 在浏览器或其他应用中选中文本，测试能否唤起应用
-   - 验证文本正确传递和显示
+#### 第二阶段：配置管理与Prompt系统
+1. **🟡 实现Prompt模板CRUD功能**（进行中）
+   - ✅ 已创建Prompt模板数据模型
+   - ✅ 已实现Room DAO接口
+   - ✅ 已创建AppDatabase类
+   - 🔄 实现PromptTemplateRepository
+   - 📋 创建Prompt模板管理界面（列表、添加、编辑、删除）
+   - 📋 集成Room数据库到应用
 
 ### 📋 待办任务
 
 #### 第二阶段：配置管理与Prompt系统
-1. **添加DataStore和Room依赖**
-   - 配置DataStore用于API密钥存储
-   - 配置Room数据库用于Prompt模板管理
 
-2. **实现API配置界面和存储**
-   - 创建API配置界面（API密钥、Base URL、模型选择）
-   - 实现DataStore存储和读取
+1. **✅ 添加DataStore和Room依赖**（已完成）
+   - ✅ DataStore Preferences 1.1.1已配置并正常工作
+   - ✅ Room 2.6.1依赖已添加并正常工作（kapt问题已解决）
+   - ✅ Kotlin序列化 1.7.0已添加
+   - ✅ Kotlin协程 1.8.0已添加
 
-3. **实现Prompt模板CRUD功能**
-   - 创建Prompt模板数据模型
-   - 实现Room DAO和数据库
-   - 创建Prompt模板管理界面（列表、添加、编辑、删除）
+2. **✅ 实现API配置界面和存储**（已完成）
+   - ✅ 创建 `UserPreferences` 数据存储类
+   - ✅ 实现 `ApiConfig` 数据模型和DataStore集成
+   - ✅ 创建完整的 `ApiConfigScreen` Compose界面
+   - ✅ 实现 `ApiConfigViewModel` 状态管理
+
+3. **🟡 实现Prompt模板CRUD功能**（部分完成）
+   - ✅ 创建Prompt模板数据模型（已完成）
+   - ✅ 实现Room DAO接口（已完成）
+   - ✅ 创建AppDatabase类（已完成）
+   - 📋 实现PromptTemplateRepository
+   - 📋 创建Prompt模板管理界面（列表、添加、编辑、删除）
+   - 📋 集成Room数据库到应用
 
 #### 第三阶段：网络层与流式输出
 1. **添加网络库依赖**
@@ -111,24 +141,38 @@
 - Navigation Compose
 - ViewModel Compose
 - Material Icons Extended
+- DataStore Preferences 1.1.1
+- Room Database 2.6.1（kapt配置已解决）
+- Kotlin序列化 1.7.0
+- Kotlin协程 1.8.0
 
 ### ⏳ 待配置
-- DataStore (Preferences/Proto)
-- Room Database
 - Retrofit + OkHttp + Gson
 - Markdown渲染库
 - 协程测试库 (MockK, Turbine)
 
 ## 下一步行动
 
-1. **立即执行**：使用虚拟设备测试第一阶段原型
-   - 启动Android模拟器（API 36）
-   - 安装应用并测试跨应用文本选择
+### 高优先级
+1. **继续完成Prompt模板CRUD功能**
+   - ✅ 已创建Prompt模板数据模型
+   - ✅ 已实现Room DAO接口
+   - ✅ 已创建AppDatabase类
+   - 🔄 实现PromptTemplateRepository
+   - 📋 创建Prompt模板管理界面（列表、添加、编辑、删除）
+   - 📋 集成Room数据库到应用
 
-2. **第二阶段准备**：添加DataStore和Room依赖
-   - 更新 `libs.versions.toml` 添加版本
-   - 更新 `build.gradle.kts` 添加依赖
-   - 配置Room数据库和DataStore
+### 中优先级
+2. **准备第三阶段网络层**
+   - 添加Retrofit、OkHttp、Gson依赖
+   - 规划LLM API服务接口设计
+   - 实现SSE流式响应支持
+
+### 低优先级
+3. **开始UI优化与Markdown渲染**
+   - 添加Markdown渲染库依赖
+   - 优化ProcessTextActivity界面设计
+   - 实现深色/浅色主题切换
 
 ## 测试指南
 
@@ -150,8 +194,9 @@
 ## 问题跟踪
 
 ### 已知问题
-1. **构建成功但未测试** - 第一阶段原型已成功构建，但需要连接Android设备或模拟器进行功能测试
-2. **主题兼容性** - 使用 `android:Theme.Material.Dialog` 主题，确保兼容API 24+
+1. **✅ 第一阶段测试完成** - 用户确认跨应用文本选择功能正常工作
+2. **✅ Room kapt配置问题已解决** - Room 2.6.1依赖和kapt注解处理器配置已修复，项目构建成功
+3. **主题兼容性** - 使用 `android:Theme.Material.Dialog` 主题，确保兼容API 24+
 
 ### 潜在风险
 1. **兼容性问题**：某些定制ROM可能不支持 `ACTION_PROCESS_TEXT`

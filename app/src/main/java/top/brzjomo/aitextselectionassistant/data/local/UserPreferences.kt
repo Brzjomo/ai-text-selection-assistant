@@ -7,11 +7,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class UserPreferences @Inject constructor(
+class UserPreferences(
     private val dataStore: DataStore<Preferences>
 ) {
     companion object {
