@@ -42,7 +42,10 @@ fun ApiConfigScreen() {
     val viewModel = viewModel<ApiConfigViewModel>(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return ApiConfigViewModel(context) as T
+                if (modelClass.isAssignableFrom(ApiConfigViewModel::class.java)) {
+                    return ApiConfigViewModel(context) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
         }
     )

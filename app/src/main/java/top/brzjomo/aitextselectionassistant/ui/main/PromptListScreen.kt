@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -19,6 +20,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import top.brzjomo.aitextselectionassistant.AITextSelectionAssistantApplication
+import top.brzjomo.aitextselectionassistant.data.local.PromptTemplate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,12 +31,15 @@ fun PromptListScreen(
     val viewModel = viewModel<PromptViewModel>(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return PromptViewModel(context) as T
+                if (modelClass.isAssignableFrom(PromptViewModel::class.java)) {
+                    return PromptViewModel(context) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
         }
     )
-    val uiState = viewModel.uiState
-    val templates = when (val state = uiState.value) {
+    val uiState by viewModel.uiState.collectAsState()
+    val templates = when (val state = uiState) {
         is PromptUiState.Success -> state.templates
         PromptUiState.Loading -> emptyList()
         is PromptUiState.Error -> emptyList()

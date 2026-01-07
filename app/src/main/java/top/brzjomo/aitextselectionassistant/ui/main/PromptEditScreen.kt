@@ -5,9 +5,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,11 +36,14 @@ fun PromptEditScreen(
     val viewModel = viewModel<PromptViewModel>(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return PromptViewModel(context) as T
+                if (modelClass.isAssignableFrom(PromptViewModel::class.java)) {
+                    return PromptViewModel(context) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
         }
     )
-    val editState = viewModel.editState
+    val editState by viewModel.editState.collectAsState()
 
     LaunchedEffect(templateId) {
         if (templateId != null && templateId > 0) {
@@ -47,9 +52,9 @@ fun PromptEditScreen(
         }
     }
 
-    if (editState.value.isEditing) {
+    if (editState.isEditing) {
         EditTemplateForm(
-            template = editState.value.template,
+            template = editState.template,
             onTemplateChange = { updatedTemplate ->
                 viewModel.updateEditTemplate(updatedTemplate)
             },
@@ -91,7 +96,7 @@ private fun EditTemplateForm(
                 title = { Text(if (template.id == 0L) "添加模板" else "编辑模板") },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
                 actions = {

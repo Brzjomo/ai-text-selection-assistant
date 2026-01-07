@@ -4,8 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Api
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Template
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,6 +27,7 @@ sealed class MainScreenRoute(val route: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
@@ -64,6 +65,7 @@ fun MainScreen() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeScreen(
     onApiConfigClick: () -> Unit,
@@ -111,7 +113,7 @@ private fun HomeScreen(
             FeatureCard(
                 title = "Prompt 模板管理",
                 description = "管理 AI 处理文本的 Prompt 模板",
-                icon = Icons.Default.Template,
+                icon = Icons.AutoMirrored.Filled.List,
                 onClick = onPromptManageClick
             )
 
@@ -142,6 +144,7 @@ private fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FeatureCard(
     title: String,
