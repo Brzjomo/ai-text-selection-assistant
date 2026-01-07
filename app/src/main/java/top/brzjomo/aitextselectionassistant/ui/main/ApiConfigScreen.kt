@@ -13,11 +13,13 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,12 +29,20 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import top.brzjomo.aitextselectionassistant.AITextSelectionAssistantApplication
 import top.brzjomo.aitextselectionassistant.data.local.ApiConfig
 import top.brzjomo.aitextselectionassistant.data.local.UserPreferences
 
 @Composable
 fun ApiConfigScreen(
-    viewModel: ApiConfigViewModel = viewModel()
+    viewModel: ApiConfigViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val context = LocalContext.current
+                return ApiConfigViewModel(context) as T
+            }
+        }
+    )
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -197,8 +207,10 @@ data class ApiConfigUiState(
 )
 
 class ApiConfigViewModel(
-    private val userPreferences: UserPreferences
+    context: android.content.Context
 ) : ViewModel() {
+    private val userPreferences = AITextSelectionAssistantApplication.getAppContainer(context).userPreferences
+
     private val _uiState = MutableStateFlow(ApiConfigUiState())
     val uiState: StateFlow<ApiConfigUiState> = _uiState.asStateFlow()
 

@@ -1,7 +1,7 @@
 # AI Text Selection Assistant 开发进度跟踪
 
 **最后更新**: 2026-01-07
-**当前阶段**: 第二阶段配置管理进行中（Room kapt配置问题已解决，Prompt模板CRUD进行中）
+**当前阶段**: 第二阶段已完成，准备进入第三阶段网络层开发
 
 ## 开发阶段概览
 
@@ -49,7 +49,7 @@
    - 继承 `Theme.MaterialComponents.Dialog`
    - 配置窗口浮动、透明背景、背景变暗等属性
 
-#### 第二阶段：配置管理与Prompt系统（部分完成）
+#### ✅ 第二阶段：配置管理与Prompt系统（已完成）
 1. **✅ 添加DataStore和Room依赖**
    - 已添加DataStore Preferences 1.1.1依赖
    - Room 2.6.1依赖已添加且kapt配置问题已解决
@@ -68,40 +68,32 @@
    - 创建 `ApiConfigViewModel` 管理配置状态
    - 集成DataStore数据流
 
-### 🔄 进行中的任务
+4. **✅ 实现Prompt模板CRUD功能**
+   - 创建 `PromptTemplateRepository` (`data/repository/PromptTemplateRepository.kt`)
+   - 实现完整的Prompt模板管理界面：
+     - `PromptListScreen`：模板列表展示，支持编辑和删除
+     - `PromptEditScreen`：添加/编辑模板表单，支持 `{{text}}` 变量占位符
+     - `PromptViewModel`：管理模板状态和业务逻辑
+   - 集成Room数据库到应用，支持模板的增删改查操作
 
-#### 第二阶段：配置管理与Prompt系统
-1. **🟡 实现Prompt模板CRUD功能**（进行中）
-   - ✅ 已创建Prompt模板数据模型
-   - ✅ 已实现Room DAO接口
-   - ✅ 已创建AppDatabase类
-   - 🔄 实现PromptTemplateRepository
-   - 📋 创建Prompt模板管理界面（列表、添加、编辑、删除）
-   - 📋 集成Room数据库到应用
+5. **✅ 创建MainScreen主界面和导航**
+   - 实现 `MainScreen` (`ui/main/MainScreen.kt`) 作为应用主界面
+   - 使用Navigation Compose实现页面路由：
+     - 首页 (Home)：功能入口
+     - API配置 (ApiConfigScreen)
+     - Prompt模板列表 (PromptListScreen)
+     - Prompt编辑 (PromptEditScreen)
+   - 更新 `MainActivity` 使用新的MainScreen
+
+6. **✅ 实现依赖注入和数据库集成**
+   - 创建 `AppContainer` 集中管理DataStore、Room数据库和Repository实例
+   - 创建 `AITextSelectionAssistantApplication` 自定义Application类
+   - 应用首次启动时自动插入5个预设模板：
+     - 翻译成英文、翻译成中文、总结摘要、解释代码、润色文本
+   - 实现ViewModel依赖注入，通过Application Context获取依赖
+
 
 ### 📋 待办任务
-
-#### 第二阶段：配置管理与Prompt系统
-
-1. **✅ 添加DataStore和Room依赖**（已完成）
-   - ✅ DataStore Preferences 1.1.1已配置并正常工作
-   - ✅ Room 2.6.1依赖已添加并正常工作（kapt问题已解决）
-   - ✅ Kotlin序列化 1.7.0已添加
-   - ✅ Kotlin协程 1.8.0已添加
-
-2. **✅ 实现API配置界面和存储**（已完成）
-   - ✅ 创建 `UserPreferences` 数据存储类
-   - ✅ 实现 `ApiConfig` 数据模型和DataStore集成
-   - ✅ 创建完整的 `ApiConfigScreen` Compose界面
-   - ✅ 实现 `ApiConfigViewModel` 状态管理
-
-3. **🟡 实现Prompt模板CRUD功能**（部分完成）
-   - ✅ 创建Prompt模板数据模型（已完成）
-   - ✅ 实现Room DAO接口（已完成）
-   - ✅ 创建AppDatabase类（已完成）
-   - 📋 实现PromptTemplateRepository
-   - 📋 创建Prompt模板管理界面（列表、添加、编辑、删除）
-   - 📋 集成Room数据库到应用
 
 #### 第三阶段：网络层与流式输出
 1. **添加网络库依赖**
@@ -154,25 +146,24 @@
 ## 下一步行动
 
 ### 高优先级
-1. **继续完成Prompt模板CRUD功能**
-   - ✅ 已创建Prompt模板数据模型
-   - ✅ 已实现Room DAO接口
-   - ✅ 已创建AppDatabase类
-   - 🔄 实现PromptTemplateRepository
-   - 📋 创建Prompt模板管理界面（列表、添加、编辑、删除）
-   - 📋 集成Room数据库到应用
+1. **开始第三阶段网络层开发**
+   - 添加Retrofit 2.11.0、OkHttp 4.12.0、Gson转换器依赖
+   - 创建LlmService Retrofit接口，支持OpenAI兼容API格式
+   - 实现SSE流式响应解析器，支持实时打字机效果输出
+   - 集成到ProcessTextActivity，使用配置的API和Prompt模板处理文本
 
 ### 中优先级
-2. **准备第三阶段网络层**
-   - 添加Retrofit、OkHttp、Gson依赖
-   - 规划LLM API服务接口设计
-   - 实现SSE流式响应支持
+2. **准备第四阶段UI优化与Markdown渲染**
+   - 添加Markdown渲染库依赖 (`com.halilibo:rich-text:0.20.2`)
+   - 优化ProcessTextActivity界面设计，添加复制、重试等实用功能
+   - 实现深色/浅色主题切换
+   - 改进流式输出显示效果
 
 ### 低优先级
-3. **开始UI优化与Markdown渲染**
-   - 添加Markdown渲染库依赖
-   - 优化ProcessTextActivity界面设计
-   - 实现深色/浅色主题切换
+3. **准备测试与发布**
+   - 编写ViewModel单元测试和Repository集成测试
+   - 进行兼容性测试（不同Android版本和ROM）
+   - 准备代码签名和Google Play发布配置
 
 ## 测试指南
 
