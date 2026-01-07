@@ -53,6 +53,18 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.compose.material.icons.extended)
+
+    // DataStore
+    implementation(libs.androidx.datastore.preferences)
+
+    // Room Database (暂时注释，kapt配置问题)
+    // implementation(libs.androidx.room.runtime)
+    // implementation(libs.androidx.room.ktx)
+    // kapt(libs.androidx.room.compiler)
+
+    // Kotlin Serialization
+    implementation(libs.kotlinx.serialization.json)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
