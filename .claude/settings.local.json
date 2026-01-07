@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew sync:*)",
+      "Bash(./gradlew build:*)",
+      "Bash(adb devices:*)",
+      "Bash(./gradlew:*)"
+    ]
+  }
+}
