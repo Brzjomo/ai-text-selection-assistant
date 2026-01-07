@@ -7,9 +7,7 @@ plugins {
 
 android {
     namespace = "top.brzjomo.aitextselectionassistant"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "top.brzjomo.aitextselectionassistant"
@@ -31,16 +29,17 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
-        languageVersion = "1.9"
-        apiVersion = "1.9"
+        jvmTarget = "17"
+//        languageVersion = "1.9"
+//        apiVersion = "1.9"
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -81,6 +80,18 @@ dependencies {
     // Kotlin Coroutines
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
+
+    // Networking
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.gson.converter)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.gson)
+
+    // Markdown Rendering
+    implementation(libs.richtext.ui)
+    implementation(libs.richtext.markdown)
+    implementation(libs.richtext.ui.material3)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

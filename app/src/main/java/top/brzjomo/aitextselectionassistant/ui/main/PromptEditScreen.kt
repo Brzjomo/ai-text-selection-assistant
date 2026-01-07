@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import top.brzjomo.aitextselectionassistant.AITextSelectionAssistantApplication
@@ -27,16 +28,16 @@ import top.brzjomo.aitextselectionassistant.AITextSelectionAssistantApplication
 @Composable
 fun PromptEditScreen(
     templateId: Long? = null,
-    viewModel: PromptViewModel = viewModel(
+    onBack: () -> Unit = {}
+) {
+    val context = LocalContext.current
+    val viewModel = viewModel<PromptViewModel>(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val context = LocalContext.current
                 return PromptViewModel(context) as T
             }
         }
-    ),
-    onBack: () -> Unit = {}
-) {
+    )
     val editState = viewModel.editState
 
     LaunchedEffect(templateId) {
@@ -118,8 +119,8 @@ private fun EditTemplateForm(
                     title = it
                     onTemplateChange(template.copy(title = it))
                 },
-                label = { Text("模板标题") },
-                placeholder = { Text("例如：翻译成英文") },
+                label = @Composable { Text("模板标题") },
+                placeholder = @Composable { Text("例如：翻译成英文") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
@@ -131,8 +132,8 @@ private fun EditTemplateForm(
                     description = it
                     onTemplateChange(template.copy(description = it))
                 },
-                label = { Text("描述（可选）") },
-                placeholder = { Text("简要描述模板用途") },
+                label = @Composable { Text("描述（可选）") },
+                placeholder = @Composable { Text("简要描述模板用途") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
@@ -144,8 +145,8 @@ private fun EditTemplateForm(
                     content = it
                     onTemplateChange(template.copy(content = it))
                 },
-                label = { Text("模板内容") },
-                placeholder = { Text("使用 {{text}} 作为文本占位符") },
+                label = @Composable { Text("模板内容") },
+                placeholder = @Composable { Text("使用 {{text}} 作为文本占位符") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp),

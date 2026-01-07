@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import top.brzjomo.aitextselectionassistant.AITextSelectionAssistantApplication
@@ -22,16 +23,16 @@ import top.brzjomo.aitextselectionassistant.AITextSelectionAssistantApplication
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PromptListScreen(
-    viewModel: PromptViewModel = viewModel(
+    onEditTemplate: (Long) -> Unit = {}
+) {
+    val context = LocalContext.current
+    val viewModel = viewModel<PromptViewModel>(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val context = LocalContext.current
                 return PromptViewModel(context) as T
             }
         }
-    ),
-    onEditTemplate: (Long) -> Unit = {}
-) {
+    )
     val uiState = viewModel.uiState
     val templates = when (val state = uiState.value) {
         is PromptUiState.Success -> state.templates

@@ -4,7 +4,17 @@
       "Bash(./gradlew sync:*)",
       "Bash(./gradlew build:*)",
       "Bash(adb devices:*)",
-      "Bash(./gradlew:*)"
+      "Bash(./gradlew:*)",
+      "Bash(head:*)",
+      "Bash(.gradlew.bat:*)",
+      "Bash(where:*)",
+      "Bash(dir:*)",
+      "WebFetch(domain:central.sonatype.com)",
+      "WebSearch",
+      "WebFetch(domain:repo1.maven.org)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:jitpack.io)",
+      "Bash(bash gradlew:*)"
     ]
   }
 }

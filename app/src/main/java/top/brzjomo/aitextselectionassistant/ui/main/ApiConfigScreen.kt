@@ -10,7 +10,10 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,16 +37,15 @@ import top.brzjomo.aitextselectionassistant.data.local.ApiConfig
 import top.brzjomo.aitextselectionassistant.data.local.UserPreferences
 
 @Composable
-fun ApiConfigScreen(
-    viewModel: ApiConfigViewModel = viewModel(
+fun ApiConfigScreen() {
+    val context = LocalContext.current
+    val viewModel = viewModel<ApiConfigViewModel>(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val context = LocalContext.current
                 return ApiConfigViewModel(context) as T
             }
         }
     )
-) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
@@ -133,11 +135,11 @@ private fun ApiConfigForm(
         OutlinedTextField(
             value = apiKey,
             onValueChange = { apiKey = it },
-            label = { Text("API Key") },
-            placeholder = { Text("输入您的 API 密钥") },
+            label = @Composable { Text("API Key") },
+            placeholder = @Composable { Text("输入您的 API 密钥") },
             modifier = Modifier.fillMaxWidth(),
             visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
+            trailingIcon = @Composable {
                 IconButton(onClick = { showApiKey = !showApiKey }) {
                     Icon(
                         imageVector = if (showApiKey) Icons.Default.VisibilityOff else Icons.Default.Visibility,
@@ -150,8 +152,8 @@ private fun ApiConfigForm(
         OutlinedTextField(
             value = baseUrl,
             onValueChange = { baseUrl = it },
-            label = { Text("Base URL") },
-            placeholder = { Text("https://api.openai.com/v1/") },
+            label = @Composable { Text("Base URL") },
+            placeholder = @Composable { Text("https://api.openai.com/v1/") },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
         )
@@ -159,8 +161,8 @@ private fun ApiConfigForm(
         OutlinedTextField(
             value = model,
             onValueChange = { model = it },
-            label = { Text("模型") },
-            placeholder = { Text("gpt-4o-mini") },
+            label = @Composable { Text("模型") },
+            placeholder = @Composable { Text("gpt-4o-mini") },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -182,8 +184,8 @@ private fun ApiConfigForm(
         OutlinedTextField(
             value = maxTokens,
             onValueChange = { maxTokens = it },
-            label = { Text("最大 tokens") },
-            placeholder = { Text("2000") },
+            label = @Composable { Text("最大 tokens") },
+            placeholder = @Composable { Text("2000") },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
@@ -191,8 +193,8 @@ private fun ApiConfigForm(
         OutlinedTextField(
             value = temperature,
             onValueChange = { temperature = it },
-            label = { Text("温度 (0.0-2.0)") },
-            placeholder = { Text("0.7") },
+            label = @Composable { Text("温度 (0.0-2.0)") },
+            placeholder = @Composable { Text("0.7") },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )

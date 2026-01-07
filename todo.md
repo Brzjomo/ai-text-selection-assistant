@@ -1,7 +1,7 @@
 # AI Text Selection Assistant 开发进度跟踪
 
 **最后更新**: 2026-01-07
-**当前阶段**: 第二阶段已完成，准备进入第三阶段网络层开发
+**当前阶段**: 第四阶段UI优化与Markdown渲染准备中（SSE流式处理已集成）
 
 ## 开发阶段概览
 
@@ -92,22 +92,31 @@
      - 翻译成英文、翻译成中文、总结摘要、解释代码、润色文本
    - 实现ViewModel依赖注入，通过Application Context获取依赖
 
+#### ✅ 第三阶段：网络层与流式输出（部分完成）
+1. **✅ 添加网络库依赖**
+   - Retrofit 2.11.0 + OkHttp 4.12.0 + Gson转换器已添加
+   - Gradle同步成功，构建通过
+
+2. **✅ 实现LLM API服务和SSE流式处理**
+   - 创建 `LlmService` Retrofit接口 (`data/remote/LlmService.kt`)
+   - 实现 `SseParser` 流式解析器 (`data/remote/SseParser.kt`)
+   - 集成OpenAI兼容API格式的数据模型 (`ChatRequest`, `ChatMessage`, `ChatStreamChunk`)
+
+3. **✅ 实现文本处理仓库**
+   - 创建 `TextRepository` (`data/repository/TextRepository.kt`)
+   - 集成API配置、Prompt模板渲染和SSE流式处理
+   - 支持流式响应收集和错误处理
+
+4. **✅ 实现ProcessTextViewModel和UI集成**
+   - 创建 `ProcessTextViewModel` 管理文本处理状态 (`ui/process/ProcessTextViewModel.kt`)
+   - 更新 `ProcessTextActivity` 集成ViewModel和流式输出显示
+   - 实现完整的UI状态管理（空闲、加载、处理中、成功、错误）
 
 ### 📋 待办任务
 
-#### 第三阶段：网络层与流式输出
-1. **添加网络库依赖**
-   - Retrofit 2.11.0 + OkHttp 4.12.0 + Gson转换器
-   - 配置SSE流式响应支持
-
-2. **实现LLM API服务和SSE流式处理**
-   - 创建LlmService Retrofit接口
-   - 实现SSE流式解析器
-   - 集成OpenAI兼容API格式
-
 #### 第四阶段：UI优化与Markdown渲染
 1. **添加Markdown渲染库依赖**
-   - `com.halilibo:rich-text:0.20.2` 或 `com.github.jeziellago:compose-markdown:0.6.0`
+   - `com.halilibo:rich-text:0.20.2` 或 `com.github.jeziellago:compose-markdown:0.5.8`
 
 2. **优化UI设计和实现主题切换**
    - 改进ProcessTextActivity界面设计
@@ -137,10 +146,10 @@
 - Room Database 2.6.1（kapt配置已解决）
 - Kotlin序列化 1.7.0
 - Kotlin协程 1.8.0
+- Retrofit + OkHttp + Gson（已添加）
+- Markdown渲染库（`com.github.jeziellago:compose-markdown:0.6.0`）
 
 ### ⏳ 待配置
-- Retrofit + OkHttp + Gson
-- Markdown渲染库
 - 协程测试库 (MockK, Turbine)
 
 ## 下一步行动

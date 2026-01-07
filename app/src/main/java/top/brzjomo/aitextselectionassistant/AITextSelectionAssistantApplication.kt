@@ -8,6 +8,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import top.brzjomo.aitextselectionassistant.data.local.PromptTemplate
+import top.brzjomo.aitextselectionassistant.AppContainer
 
 class AITextSelectionAssistantApplication : Application() {
     lateinit var appContainer: AppContainer
