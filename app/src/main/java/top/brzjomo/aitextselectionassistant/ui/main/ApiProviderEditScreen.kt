@@ -289,7 +289,7 @@ private fun EditProviderForm(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().clickable { enableStreaming = !enableStreaming }
             ) {
                 Checkbox(
                     checked = enableStreaming,
@@ -298,14 +298,13 @@ private fun EditProviderForm(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "启用流式输出",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.clickable { enableStreaming = !enableStreaming }
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().clickable { enableAdvancedParams = !enableAdvancedParams }
             ) {
                 Checkbox(
                     checked = enableAdvancedParams,
@@ -314,8 +313,7 @@ private fun EditProviderForm(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "启用高级参数",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.clickable { enableAdvancedParams = !enableAdvancedParams }
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
 
@@ -367,7 +365,7 @@ private fun EditProviderForm(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().clickable { isDefault = !isDefault }
             ) {
                 Checkbox(
                     checked = isDefault,
@@ -376,8 +374,7 @@ private fun EditProviderForm(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "设为默认服务商",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.clickable { isDefault = !isDefault }
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
 

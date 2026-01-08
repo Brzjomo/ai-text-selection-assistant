@@ -172,7 +172,7 @@ private fun ApiConfigForm(
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().clickable { enableStreaming = !enableStreaming }
         ) {
             Checkbox(
                 checked = enableStreaming,
@@ -182,7 +182,6 @@ private fun ApiConfigForm(
             Text(
                 text = "启用流式输出",
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.clickable { enableStreaming = !enableStreaming }
             )
         }
 
