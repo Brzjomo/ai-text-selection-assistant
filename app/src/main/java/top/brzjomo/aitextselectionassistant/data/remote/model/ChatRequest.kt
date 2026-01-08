@@ -14,5 +14,8 @@ data class ChatRequest(
     @SerializedName("temperature")
     val temperature: Double? = null,
     @SerializedName("top_p")
-    val topP: Double? = null
+    val topP: Double? = null,
+
+    // 额外参数，将作为顶级字段添加到JSON
+    val extraParameters: Map<String, Any>? = null
 )

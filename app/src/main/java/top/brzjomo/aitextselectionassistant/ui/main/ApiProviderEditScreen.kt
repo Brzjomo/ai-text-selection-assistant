@@ -94,6 +94,9 @@ private fun EditProviderForm(
     var maxTokens by remember { mutableStateOf(provider.maxTokens.toString()) }
     var temperature by remember { mutableStateOf(provider.temperature.toString()) }
     var isDefault by remember { mutableStateOf(provider.isDefault) }
+    var enableAdvancedParams by remember { mutableStateOf(provider.enableAdvancedParams) }
+    var topP by remember { mutableStateOf(provider.topP.toString()) }
+    var customParameters by remember { mutableStateOf(provider.customParameters ?: "") }
     var showApiKey by remember { mutableStateOf(false) }
 
     LaunchedEffect(provider) {
@@ -106,11 +109,15 @@ private fun EditProviderForm(
         maxTokens = provider.maxTokens.toString()
         temperature = provider.temperature.toString()
         isDefault = provider.isDefault
+        enableAdvancedParams = provider.enableAdvancedParams
+        topP = provider.topP.toString()
+        customParameters = provider.customParameters ?: ""
     }
 
     LaunchedEffect(
         name, providerType, baseUrl, apiKey, model,
-        enableStreaming, maxTokens, temperature, isDefault
+        enableStreaming, maxTokens, temperature, isDefault,
+        enableAdvancedParams, topP, customParameters
     ) {
         val newProvider = provider.copy(
             name = name,
@@ -121,7 +128,10 @@ private fun EditProviderForm(
             enableStreaming = enableStreaming,
             maxTokens = maxTokens.toIntOrNull() ?: 2000,
             temperature = temperature.toDoubleOrNull() ?: 0.7,
-            isDefault = isDefault
+            isDefault = isDefault,
+            enableAdvancedParams = enableAdvancedParams,
+            topP = topP.toDoubleOrNull() ?: 1.0,
+            customParameters = if (customParameters.isNotBlank()) customParameters else null
         )
         onProviderChange(newProvider)
     }
@@ -291,23 +301,66 @@ private fun EditProviderForm(
                 )
             }
 
-            OutlinedTextField(
-                value = maxTokens,
-                onValueChange = { maxTokens = it },
-                label = @Composable { Text("最大 tokens") },
-                placeholder = @Composable { Text("2000") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = enableAdvancedParams,
+                    onCheckedChange = { enableAdvancedParams = it }
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "启用高级参数",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
 
-            OutlinedTextField(
-                value = temperature,
-                onValueChange = { temperature = it },
-                label = @Composable { Text("温度 (0.0-2.0)") },
-                placeholder = @Composable { Text("0.7") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
+            if (enableAdvancedParams) {
+                OutlinedTextField(
+                    value = maxTokens,
+                    onValueChange = { maxTokens = it },
+                    label = @Composable { Text("最大 tokens") },
+                    placeholder = @Composable { Text("2000") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+
+                OutlinedTextField(
+                    value = temperature,
+                    onValueChange = { temperature = it },
+                    label = @Composable { Text("温度 (0.0-2.0)") },
+                    placeholder = @Composable { Text("0.7") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+
+                OutlinedTextField(
+                    value = topP,
+                    onValueChange = { topP = it },
+                    label = @Composable { Text("Top-P (0.0-1.0)") },
+                    placeholder = @Composable { Text("1.0") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+
+                Text(
+                    text = "自定义参数（每行一个参数，格式如：frequency_penalty:0.5）",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+
+                OutlinedTextField(
+                    value = customParameters,
+                    onValueChange = { customParameters = it },
+                    label = @Composable { Text("自定义参数") },
+                    placeholder = @Composable { Text("frequency_penalty:0.5\npresence_penalty:0.5\nstop:END") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = false,
+                    maxLines = 4
+                )
+            }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,

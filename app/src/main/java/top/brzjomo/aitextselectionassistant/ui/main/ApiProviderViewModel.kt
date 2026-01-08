@@ -32,6 +32,9 @@ data class ApiProviderEditState(
         enableStreaming = true,
         maxTokens = 2000,
         temperature = 0.7,
+        enableAdvancedParams = false,
+        topP = 1.0,
+        customParameters = null,
         isDefault = false
     ),
     val isEditing: Boolean = false
@@ -78,6 +81,9 @@ class ApiProviderViewModel(
                 enableStreaming = true,
                 maxTokens = 2000,
                 temperature = 0.7,
+                enableAdvancedParams = false,
+                topP = 1.0,
+                customParameters = null,
                 isDefault = false
             ),
             isEditing = true
