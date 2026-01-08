@@ -1,7 +1,7 @@
 # AI Text Selection Assistant 开发进度跟踪
 
-**最后更新**: 2026-01-07
-**当前阶段**: 第四阶段UI优化与Markdown渲染准备中（SSE流式处理已集成）
+**最后更新**: 2026-01-08
+**当前阶段**: 第四阶段UI优化与Markdown渲染已完成，准备进入第五阶段测试与发布
 
 ## 开发阶段概览
 
@@ -92,7 +92,7 @@
      - 翻译成英文、翻译成中文、总结摘要、解释代码、润色文本
    - 实现ViewModel依赖注入，通过Application Context获取依赖
 
-#### ✅ 第三阶段：网络层与流式输出（部分完成）
+#### ✅ 第三阶段：网络层与流式输出（已完成）
 1. **✅ 添加网络库依赖**
    - Retrofit 2.11.0 + OkHttp 4.12.0 + Gson转换器已添加
    - Gradle同步成功，构建通过
@@ -112,26 +112,43 @@
    - 更新 `ProcessTextActivity` 集成ViewModel和流式输出显示
    - 实现完整的UI状态管理（空闲、加载、处理中、成功、错误）
 
+#### ✅ 第四阶段：UI优化与Markdown渲染（已完成）
+1. **✅ 集成Markdown渲染库**
+   - 已添加 `com.halilibo:rich-text:0.16.0` 依赖
+   - 创建 `MarkdownText` 组件 (`ui/components/MarkdownText.kt`)
+   - 实现Markdown格式渲染，支持代码高亮、表格、列表等
+
+2. **✅ 优化ProcessTextActivity界面设计**
+   - 添加Prompt模板选择功能：集成下拉菜单选择器
+   - 改进UI布局和视觉层次，优化组件间距
+   - 添加复制处理结果功能：支持处理中和完成状态的文本复制
+   - 完善按钮交互和状态管理
+
+3. **✅ 实现深色/浅色主题切换**
+   - 添加主题切换按钮（🌙/☀️图标）
+   - 支持三种模式：跟随系统 → 深色 → 浅色 → 跟随系统
+   - 禁用动态颜色确保主题切换效果明显
+   - 主题状态实时更新，无需重启应用
+
+4. **✅ 完善实用功能**
+   - 复制功能集成Android `ClipboardManager`
+   - 重试和取消处理功能
+   - 错误处理和状态恢复机制
+   - 改进流式输出显示效果，实时显示接收到的内容
+
 ### 📋 待办任务
-
-#### 第四阶段：UI优化与Markdown渲染
-1. **添加Markdown渲染库依赖**
-   - `com.halilibo:rich-text:0.20.2` 或 `com.github.jeziellago:compose-markdown:0.5.8`
-
-2. **优化UI设计和实现主题切换**
-   - 改进ProcessTextActivity界面设计
-   - 实现深色/浅色主题切换
-   - 添加复制、重试等实用功能
 
 #### 第五阶段：测试与发布
 1. **编写测试**
-   - ViewModel单元测试
-   - Repository集成测试
-   - UI测试
+   - ViewModel单元测试（ProcessTextViewModel、PromptViewModel等）
+   - Repository集成测试（TextRepository、PromptTemplateRepository）
+   - UI测试（ProcessTextActivity、MainScreen界面交互）
 
 2. **准备发布**
-   - 代码签名配置
-   - Google Play发布准备
+   - 代码签名配置（生成签名密钥，配置build.gradle）
+   - Google Play发布准备（应用截图、描述、隐私政策等）
+   - 兼容性测试（不同Android版本和ROM）
+   - 性能优化和内存泄漏检查
 
 ## 技术栈状态
 
@@ -147,7 +164,7 @@
 - Kotlin序列化 1.7.0
 - Kotlin协程 1.8.0
 - Retrofit + OkHttp + Gson（已添加）
-- Markdown渲染库（`com.github.jeziellago:compose-markdown:0.6.0`）
+- Markdown渲染库（`com.halilibo:rich-text:0.16.0`）
 
 ### ⏳ 待配置
 - 协程测试库 (MockK, Turbine)
@@ -155,24 +172,25 @@
 ## 下一步行动
 
 ### 高优先级
-1. **开始第三阶段网络层开发**
-   - 添加Retrofit 2.11.0、OkHttp 4.12.0、Gson转换器依赖
-   - 创建LlmService Retrofit接口，支持OpenAI兼容API格式
-   - 实现SSE流式响应解析器，支持实时打字机效果输出
-   - 集成到ProcessTextActivity，使用配置的API和Prompt模板处理文本
+1. **开始第五阶段测试开发**
+   - 配置测试依赖（MockK, Turbine等）
+   - 编写ViewModel单元测试（ProcessTextViewModel、PromptViewModel）
+   - 编写Repository集成测试（TextRepository、PromptTemplateRepository）
+   - 编写UI测试（ProcessTextActivity界面交互）
 
 ### 中优先级
-2. **准备第四阶段UI优化与Markdown渲染**
-   - 添加Markdown渲染库依赖 (`com.halilibo:rich-text:0.20.2`)
-   - 优化ProcessTextActivity界面设计，添加复制、重试等实用功能
-   - 实现深色/浅色主题切换
-   - 改进流式输出显示效果
+2. **准备应用发布**
+   - 生成应用签名密钥
+   - 配置build.gradle的签名设置
+   - 准备Google Play发布材料（应用截图、描述、隐私政策）
+   - 进行最终兼容性测试（API 24+设备）
 
 ### 低优先级
-3. **准备测试与发布**
-   - 编写ViewModel单元测试和Repository集成测试
-   - 进行兼容性测试（不同Android版本和ROM）
-   - 准备代码签名和Google Play发布配置
+3. **用户体验优化**
+   - 添加复制成功提示（Toast或Snackbar）
+   - 优化网络状态检测和错误提示
+   - 添加处理历史记录功能
+   - 支持更多Markdown渲染选项
 
 ## 测试指南
 

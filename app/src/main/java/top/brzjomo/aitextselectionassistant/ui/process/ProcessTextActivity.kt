@@ -1,6 +1,8 @@
 package top.brzjomo.aitextselectionassistant.ui.process
 
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
@@ -10,8 +12,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,8 +26,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import top.brzjomo.aitextselectionassistant.AITextSelectionAssistantApplication
 import top.brzjomo.aitextselectionassistant.ViewModelFactory
+import top.brzjomo.aitextselectionassistant.data.repository.PromptTemplateRepository
 import top.brzjomo.aitextselectionassistant.ui.components.MarkdownText
 import top.brzjomo.aitextselectionassistant.ui.process.ProcessTextEvent
 import top.brzjomo.aitextselectionassistant.ui.theme.AITextSelectionAssistantTheme
@@ -46,10 +56,25 @@ class ProcessTextActivity : ComponentActivity() {
         window.setBackgroundDrawableResource(android.R.color.transparent)
 
         setContent {
-            AITextSelectionAssistantTheme {
+            var darkThemeOverride by remember { mutableStateOf<Boolean?>(null) }
+            val darkTheme = darkThemeOverride ?: isSystemInDarkTheme()
+            val systemDarkTheme = isSystemInDarkTheme()
+
+            AITextSelectionAssistantTheme(
+                darkTheme = darkTheme,
+                dynamicColor = false // 禁用动态颜色以确保主题切换效果明显
+            ) {
                 ProcessTextScreen(
                     selectedText = selectedText,
-                    viewModel = viewModel
+                    viewModel = viewModel,
+                    darkTheme = darkTheme,
+                    onToggleTheme = {
+                        darkThemeOverride = when (darkThemeOverride) {
+                            null -> !systemDarkTheme // 从跟随系统切换到相反模式
+                            true -> false // 从深色切换到浅色
+                            false -> null // 从浅色切换回跟随系统
+                        }
+                    }
                 )
             }
         }
@@ -59,12 +84,17 @@ class ProcessTextActivity : ComponentActivity() {
 @Composable
 fun ProcessTextScreen(
     selectedText: String,
-    viewModel: ProcessTextViewModel
+    viewModel: ProcessTextViewModel,
+    darkTheme: Boolean,
+    onToggleTheme: () -> Unit
 ) {
     val context = LocalContext.current
     val activity = context as Activity
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // 选中的模板ID状态
+    var selectedTemplateId by remember { mutableLongStateOf(0L) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -76,12 +106,29 @@ fun ProcessTextScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // 标题
-            Text(
-                text = "AI 划词助手",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
+            // 标题行
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "AI 划词助手",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                // 主题切换按钮
+                IconButton(
+                    onClick = onToggleTheme
+                ) {
+                    Icon(
+                        imageVector = if (darkTheme) Icons.Filled.LightMode else Icons.Filled.DarkMode,
+                        contentDescription = if (darkTheme) "切换到浅色模式" else "切换到深色模式",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -106,7 +153,18 @@ fun ProcessTextScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Prompt模板选择
+            PromptTemplateSelector(
+                selectedTemplateId = selectedTemplateId,
+                onTemplateSelected = { templateId ->
+                    selectedTemplateId = templateId
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // 处理结果区域
             when (val state = uiState) {
@@ -167,6 +225,28 @@ fun ProcessTextScreen(
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // 复制按钮（处理中状态）
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                val context = LocalContext.current
+                                Button(
+                                    onClick = {
+                                        val clipboardManager = context.getSystemService(ClipboardManager::class.java)
+                                        val clipData = ClipData.newPlainText("AI处理结果", state.accumulatedText)
+                                        clipboardManager.setPrimaryClip(clipData)
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                ) {
+                                    Text("复制当前结果")
+                                }
+                            }
                         }
                     }
                 }
@@ -192,6 +272,28 @@ fun ProcessTextScreen(
                                 content = state.fullText,
                                 modifier = Modifier.fillMaxWidth()
                             )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // 复制按钮
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                val context = LocalContext.current
+                                Button(
+                                    onClick = {
+                                        val clipboardManager = context.getSystemService(ClipboardManager::class.java)
+                                        val clipData = ClipData.newPlainText("AI处理结果", state.fullText)
+                                        clipboardManager.setPrimaryClip(clipData)
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                ) {
+                                    Text("复制结果")
+                                }
+                            }
                         }
                     }
                 }
@@ -231,7 +333,12 @@ fun ProcessTextScreen(
                     // 空闲状态：显示处理文本按钮
                     Button(
                         onClick = {
-                            viewModel.onEvent(ProcessTextEvent.ProcessText(selectedText))
+                            viewModel.onEvent(
+                                ProcessTextEvent.ProcessText(
+                                    selectedText = selectedText,
+                                    templateId = if (selectedTemplateId != 0L) selectedTemplateId else null
+                                )
+                            )
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -259,7 +366,12 @@ fun ProcessTextScreen(
                     // 成功状态：显示重新处理按钮
                     Button(
                         onClick = {
-                            viewModel.onEvent(ProcessTextEvent.ProcessText(selectedText))
+                            viewModel.onEvent(
+                                ProcessTextEvent.ProcessText(
+                                    selectedText = selectedText,
+                                    templateId = if (selectedTemplateId != 0L) selectedTemplateId else null
+                                )
+                            )
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -275,7 +387,12 @@ fun ProcessTextScreen(
                     ) {
                         Button(
                             onClick = {
-                                viewModel.onEvent(ProcessTextEvent.ProcessText(selectedText))
+                                viewModel.onEvent(
+                                    ProcessTextEvent.ProcessText(
+                                        selectedText = selectedText,
+                                        templateId = if (selectedTemplateId != 0L) selectedTemplateId else null
+                                    )
+                                )
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -301,6 +418,91 @@ fun ProcessTextScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("关闭")
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Suppress("DEPRECATION")
+@Composable
+fun PromptTemplateSelector(
+    selectedTemplateId: Long,
+    onTemplateSelected: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val appContainer = AITextSelectionAssistantApplication.getAppContainer(context)
+    val promptTemplateRepository = appContainer.promptTemplateRepository
+
+    // 模板列表状态
+    val scope = rememberCoroutineScope()
+    val templates by produceState(
+        initialValue = emptyList(),
+        key1 = promptTemplateRepository
+    ) {
+        // 在后台协程中收集模板列表
+        scope.launch {
+            promptTemplateRepository.getAllTemplates().collectLatest { templatesList ->
+                value = templatesList
+            }
+        }
+    }
+
+    // 下拉菜单展开状态
+    var expanded by remember { mutableStateOf(false) }
+
+    // 如果没有模板，显示提示
+    if (templates.isEmpty()) {
+        Text(
+            text = "暂无模板，请先添加Prompt模板",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
+            modifier = modifier.padding(vertical = 8.dp)
+        )
+        return
+    }
+
+    // 选中的模板
+    val selectedTemplate = templates.find { it.id == selectedTemplateId } ?: templates.firstOrNull()
+    val selectedTemplateTitle = selectedTemplate?.title ?: "选择模板"
+
+    Column(modifier = modifier) {
+        Text(
+            text = "选择Prompt模板：",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // 下拉选择框
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            TextField(
+                value = selectedTemplateTitle,
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                templates.forEach { template ->
+                    DropdownMenuItem(
+                        text = { Text(template.title) },
+                        onClick = {
+                            onTemplateSelected(template.id)
+                            expanded = false
+                        }
+                    )
+                }
             }
         }
     }
