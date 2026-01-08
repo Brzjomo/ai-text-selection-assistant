@@ -44,6 +44,7 @@ fun PromptListScreen(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 if (modelClass.isAssignableFrom(PromptViewModel::class.java)) {
+                    @Suppress("UNCHECKED_CAST")
                     return PromptViewModel(context) as T
                 }
                 throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
@@ -55,11 +56,11 @@ fun PromptListScreen(
     // 本地维护一个可变列表以实现实时 UI 响应
     val templates = remember { mutableStateListOf<PromptTemplate>() }
 
-    // 监听 ViewModel 数据变化并同步到本地列表（仅在非拖拽状态下完全重置，避免冲突）
+    // 监听 ViewModel 数据变化并同步到本地列表
     LaunchedEffect(uiState) {
         if (uiState is PromptUiState.Success) {
             val newTemplates = (uiState as PromptUiState.Success).templates
-            // 简单比对一下 ID 列表，如果有变化则更新，实际生产中可用更复杂的 Diff
+            // 简单比对一下 ID 列表，防止不必要的刷新
             if (templates.map { it.id } != newTemplates.map { it.id }) {
                 templates.clear()
                 templates.addAll(newTemplates)
@@ -134,26 +135,29 @@ fun PromptListScreen(
                 ) { index, template ->
                     val isDragging = draggingItemId == template.id
 
-                    // 拖拽时的视觉效果：Z轴提升，透明度变化
+                    // 拖拽时的视觉效果
                     val elevation by animateFloatAsState(if (isDragging) 8f else 0f, label = "elevation")
                     val scale by animateFloatAsState(if (isDragging) 1.05f else 1f, label = "scale")
 
-                    Box(
-                        modifier = Modifier
-                            // 关键：使用 animateItemPlacement 实现平滑重排动画
-                            .animateItemPlacement()
-                            .zIndex(if (isDragging) 1f else 0f)
-                            .graphicsLayer {
-                                translationY = if (isDragging) draggingItemOffset else 0f
-                                scaleX = scale
-                                scaleY = scale
-                                shadowElevation = elevation
-                            }
-                            // 记录高度，用于计算交换
-                            .onSizeChanged { size ->
-                                itemHeights[template.id] = size.height
-                            }
-                    ) {
+                    // 构建 Modifier 链
+                    // 如果当前 Item 正在被拖拽，就不应用 animateItemPlacement()，完全由 draggingItemOffset 控制位置
+                    // 如果没有被拖拽（是其他让位的 Item），则应用动画实现平滑移动
+                    val modifier = Modifier
+                        .then(if (isDragging) Modifier else Modifier.animateItemPlacement())
+                        .zIndex(if (isDragging) 1f else 0f)
+                        .graphicsLayer {
+                            translationY = if (isDragging) draggingItemOffset else 0f
+                            scaleX = scale
+                            scaleY = scale
+                            shadowElevation = elevation
+                            // 可选：拖拽时稍微降低不透明度，增强视觉反馈
+                            alpha = if (isDragging) 0.9f else 1f
+                        }
+                        .onSizeChanged { size ->
+                            itemHeights[template.id] = size.height
+                        }
+
+                    Box(modifier = modifier) {
                         PromptTemplateCard(
                             template = template,
                             onEdit = { onEditTemplate(template.id) },
@@ -174,30 +178,29 @@ fun PromptListScreen(
                                         val currentIndex = templates.indexOfFirst { it.id == currentId }
                                         if (currentIndex == -1) return@detectDragGesturesAfterLongPress
 
-                                        // 获取当前卡片的高度，如果没有记录则给一个默认值
                                         val currentHeight = itemHeights[currentId] ?: 0
+                                        val swapThreshold = currentHeight / 2
 
-                                        // 简单的阈值判定：拖动超过高度的一半即触发交换
                                         // 向下拖动
-                                        if (draggingItemOffset > currentHeight / 2 && currentIndex < templates.lastIndex) {
+                                        if (draggingItemOffset > swapThreshold && currentIndex < templates.lastIndex) {
                                             val targetIndex = currentIndex + 1
-                                            // 交换数据源
+                                            // 交换数据
                                             templates.apply {
                                                 add(targetIndex, removeAt(currentIndex))
                                             }
-                                            // 修正偏移量：因为在列表中位置变了，需要减去一个卡片高度+间距让视觉位置保持在手指下
-                                            // 这里简化处理，减去当前卡片高度即可（如果高度差异大可能需要更精确计算）
+                                            // 修正偏移量：Item 位置变了，手动减去高度差以保持视觉位置不变
                                             val targetHeight = itemHeights[templates[currentIndex].id] ?: currentHeight
-                                            draggingItemOffset -= (targetHeight + 8.dp.toPx()) // 8.dp 是 spacedBy
+                                            draggingItemOffset -= (targetHeight + 8.dp.toPx())
                                             vibrate()
                                         }
                                         // 向上拖动
-                                        else if (draggingItemOffset < -currentHeight / 2 && currentIndex > 0) {
+                                        else if (draggingItemOffset < -swapThreshold && currentIndex > 0) {
                                             val targetIndex = currentIndex - 1
+                                            // 交换数据
                                             templates.apply {
                                                 add(targetIndex, removeAt(currentIndex))
                                             }
-                                            // 修正偏移量：加上上方卡片的高度
+                                            // 修正偏移量
                                             val targetHeight = itemHeights[templates[currentIndex].id] ?: currentHeight
                                             draggingItemOffset += (targetHeight + 8.dp.toPx())
                                             vibrate()
@@ -206,15 +209,15 @@ fun PromptListScreen(
                                     onDragEnd = {
                                         draggingItemId = null
                                         draggingItemOffset = 0f
-                                        // 拖拽结束后，将最终顺序保存到数据库
                                         scope.launch {
                                             viewModel.reorderTemplates(templates.toList())
+                                            // 拖拽结束后，可能需要重新加载以确保一致性，
+                                            // 但为了避免列表闪烁，通常这里不做全量刷新，除非有错误
                                         }
                                     },
                                     onDragCancel = {
                                         draggingItemId = null
                                         draggingItemOffset = 0f
-                                        // 可以在这里重新加载原始数据以回滚
                                         viewModel.loadTemplates()
                                     }
                                 )
