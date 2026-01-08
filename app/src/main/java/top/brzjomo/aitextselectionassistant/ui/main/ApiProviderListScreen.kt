@@ -3,9 +3,11 @@ package top.brzjomo.aitextselectionassistant.ui.main
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
@@ -115,21 +117,30 @@ fun ApiProviderCard(
             ) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clickable(enabled = !provider.isDefault) {
+                                    if (!provider.isDefault) {
+                                        onSetDefault()
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (provider.isDefault) Icons.Filled.CheckCircle else Icons.Filled.Circle,
+                                contentDescription = if (provider.isDefault) "默认" else "设为默认",
+                                modifier = Modifier.size(16.dp),
+                                tint = if (provider.isDefault) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = provider.name,
                             style = MaterialTheme.typography.titleMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        if (provider.isDefault) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                Icons.Default.CheckCircle,
-                                contentDescription = "默认",
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
                     }
                     Text(
                         text = "${provider.providerType.name} - ${provider.model}",
@@ -139,18 +150,6 @@ fun ApiProviderCard(
                 }
 
                 Row {
-                    if (!provider.isDefault) {
-                        IconButton(
-                            onClick = onSetDefault,
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.RadioButtonUnchecked,
-                                contentDescription = "设为默认",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
                     IconButton(onClick = onEdit) {
                         Icon(Icons.Default.Edit, contentDescription = "编辑")
                     }

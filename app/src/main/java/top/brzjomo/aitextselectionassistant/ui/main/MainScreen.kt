@@ -4,11 +4,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Api
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -106,6 +109,7 @@ private fun HomeScreen(
         }
     )
     val uiState by viewModel.uiState.collectAsState()
+    var showProviderDialog by remember { mutableStateOf(false) }
 
     // 获取当前默认服务商
     val currentProvider = when (val state = uiState) {
@@ -114,6 +118,11 @@ private fun HomeScreen(
         }
         ApiProviderUiState.Loading -> null
         is ApiProviderUiState.Error -> null
+    }
+    val providers = when (val state = uiState) {
+        is ApiProviderUiState.Success -> state.providers
+        ApiProviderUiState.Loading -> emptyList()
+        is ApiProviderUiState.Error -> emptyList()
     }
 
     LaunchedEffect(Unit) {
@@ -147,7 +156,7 @@ private fun HomeScreen(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 ),
-                onClick = onApiConfigClick
+                onClick = { showProviderDialog = true }
             ) {
                 Row(
                     modifier = Modifier.padding(20.dp),
@@ -237,6 +246,72 @@ private fun HomeScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        if (showProviderDialog) {
+            AlertDialog(
+                onDismissRequest = { showProviderDialog = false },
+                title = { Text("选择当前服务商") },
+                text = {
+                    Column {
+                        providers.forEach { provider ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp)
+                                    .clickable {
+                                        viewModel.setDefaultProvider(provider.id)
+                                        showProviderDialog = false
+                                    },
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                if (provider.isDefault) {
+                                    Box(
+                                        modifier = Modifier.size(28.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.CheckCircle,
+                                            contentDescription = "已选中",
+                                            modifier = Modifier.size(24.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                } else {
+                                    Box(
+                                        modifier = Modifier.size(28.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Circle,
+                                            contentDescription = "未选中",
+                                            modifier = Modifier.size(24.dp),
+                                            tint = MaterialTheme.colorScheme.outline
+                                        )
+                                    }
+                                }
+                                Column {
+                                    Text(
+                                        text = provider.name,
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Text(
+                                        text = "${provider.providerType.name} - ${provider.model}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.outline
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showProviderDialog = false }) {
+                        Text("取消")
+                    }
+                }
+            )
         }
     }
 }
