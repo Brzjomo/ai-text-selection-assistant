@@ -29,6 +29,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -48,16 +52,32 @@ class ProcessTextActivity : ComponentActivity() {
         }
     )
 
+    // 更新窗口位置
+    private fun updateWindowPosition(dx: Int, dy: Int) {
+        val windowParams = window.attributes
+        windowParams.x += dx
+        windowParams.y += dy
+        window.attributes = windowParams
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         // 获取选中的文本
         val selectedText = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString() ?: ""
 
-        // Dialog 窗口配置
-        window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        window.setGravity(Gravity.BOTTOM)
+        // Dialog 窗口配置 - 支持拖动
+        val windowParams = window.attributes
+        windowParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+        windowParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+        windowParams.gravity = Gravity.TOP or Gravity.START
+        // 初始位置：屏幕中央偏下
+        val displayMetrics = resources.displayMetrics
+        windowParams.y = displayMetrics.heightPixels / 2 + 100  // 从屏幕中央偏下100像素开始
+        window.attributes = windowParams
         window.setBackgroundDrawableResource(android.R.color.transparent)
+        // 移除背景遮罩，使外部区域透明
+        window.setDimAmount(0f)
 
         setContent {
             var darkThemeOverride by remember { mutableStateOf<Boolean?>(null) }
@@ -105,6 +125,10 @@ fun ProcessTextScreen(
     // 选中的文本展开状态（默认折叠）
     var isTextExpanded by remember { mutableStateOf(false) }
 
+    // 处理结果展开状态（默认折叠）
+    var isProcessingResultExpanded by remember { mutableStateOf(false) }
+    var isSuccessResultExpanded by remember { mutableStateOf(false) }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -124,7 +148,17 @@ fun ProcessTextScreen(
         ) {
             // 标题行
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pointerInput(Unit) {
+                        detectDragGestures { change, dragAmount ->
+                            // 更新窗口位置
+                            val windowParams = activity.window.attributes
+                            windowParams.x += dragAmount.x.toInt()
+                            windowParams.y += dragAmount.y.toInt()
+                            activity.window.attributes = windowParams
+                        }
+                    },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -228,12 +262,7 @@ fun ProcessTextScreen(
             ) {
                 when (val state = uiState) {
                 is ProcessTextUiState.Idle -> {
-                    // 空闲状态：显示提示和开始按钮
-                    Text(
-                        text = "点击下方按钮开始处理文本",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    // 空闲状态：不显示提示，只显示开始按钮
                 }
 
                 is ProcessTextUiState.Loading -> {
@@ -256,115 +285,209 @@ fun ProcessTextScreen(
                 }
 
                 is ProcessTextUiState.Processing -> {
-                    // 流式处理中：显示累积文本
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
+                    // 流式处理中：显示累积文本（可折叠）
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
                         ) {
-                            Text(
-                                text = "处理结果：",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            // Markdown文本可滚动
-                            MarkdownText(
-                                content = state.accumulatedText,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                                    .verticalScroll(rememberScrollState())
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            if (state.newChunk.isNotEmpty()) {
-                                Text(
-                                    text = "刚刚收到: ${state.newChunk}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // 复制按钮（处理中状态）
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
+                            Column(
+                                modifier = Modifier.padding(16.dp)
                             ) {
-                                val context = LocalContext.current
-                                Button(
-                                    onClick = {
-                                        val clipboardManager = context.getSystemService(ClipboardManager::class.java)
-                                        val clipData = ClipData.newPlainText("AI处理结果", state.accumulatedText)
-                                        clipboardManager.setPrimaryClip(clipData)
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                    )
+                                // 可点击的标题行
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text("复制当前结果")
+                                    Text(
+                                        text = "处理结果：",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    IconButton(
+                                        onClick = { isProcessingResultExpanded = !isProcessingResultExpanded },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isProcessingResultExpanded)
+                                                Icons.Filled.ExpandLess
+                                            else
+                                                Icons.Filled.ExpandMore,
+                                            contentDescription = if (isProcessingResultExpanded)
+                                                "折叠处理结果"
+                                            else
+                                                "展开处理结果",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                // 条件显示文本内容
+                                if (isProcessingResultExpanded) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    // Markdown文本可滚动
+                                    MarkdownText(
+                                        content = state.accumulatedText,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .weight(1f)
+                                            .verticalScroll(rememberScrollState())
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    if (state.newChunk.isNotEmpty()) {
+                                        Text(
+                                            text = "刚刚收到: ${state.newChunk}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                } else {
+                                    // 折叠状态下显示完整内容但限制高度
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    // 固定高度容器，内部可滚动
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(200.dp)
+                                    ) {
+                                        MarkdownText(
+                                            content = state.accumulatedText,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .verticalScroll(rememberScrollState())
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        if (state.newChunk.isNotEmpty()) {
+                                            Text(
+                                                text = "刚刚收到: ${state.newChunk}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
                                 }
                             }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // 复制按钮（处理中状态）- 在Card外部
+                        val context = LocalContext.current
+                        Button(
+                            onClick = {
+                                val clipboardManager = context.getSystemService(ClipboardManager::class.java)
+                                val clipData = ClipData.newPlainText("AI处理结果", state.accumulatedText)
+                                clipboardManager.setPrimaryClip(clipData)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        ) {
+                            Text("复制当前结果")
                         }
                     }
                 }
 
                 is ProcessTextUiState.Success -> {
-                    // 处理成功：显示完整结果
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        )
+                    // 处理成功：显示完整结果（可折叠）
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
                         ) {
-                            Text(
-                                text = "处理完成：",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            // Markdown文本可滚动
-                            MarkdownText(
-                                content = state.fullText,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                                    .verticalScroll(rememberScrollState())
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // 复制按钮
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
+                            Column(
+                                modifier = Modifier.padding(16.dp)
                             ) {
-                                val context = LocalContext.current
-                                Button(
-                                    onClick = {
-                                        val clipboardManager = context.getSystemService(ClipboardManager::class.java)
-                                        val clipData = ClipData.newPlainText("AI处理结果", state.fullText)
-                                        clipboardManager.setPrimaryClip(clipData)
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
+                                // 可点击的标题行
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text("复制结果")
+                                    Text(
+                                        text = "处理完成：",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    IconButton(
+                                        onClick = { isSuccessResultExpanded = !isSuccessResultExpanded },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isSuccessResultExpanded)
+                                                Icons.Filled.ExpandLess
+                                            else
+                                                Icons.Filled.ExpandMore,
+                                            contentDescription = if (isSuccessResultExpanded)
+                                                "折叠处理结果"
+                                            else
+                                                "展开处理结果",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                // 条件显示文本内容
+                                if (isSuccessResultExpanded) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    // Markdown文本可滚动
+                                    MarkdownText(
+                                        content = state.fullText,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .weight(1f)
+                                            .verticalScroll(rememberScrollState())
+                                    )
+                                } else {
+                                    // 折叠状态下显示完整内容但限制高度
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    // 固定高度容器，内部可滚动
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(200.dp)
+                                    ) {
+                                        MarkdownText(
+                                            content = state.fullText,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .verticalScroll(rememberScrollState())
+                                        )
+                                    }
                                 }
                             }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // 复制按钮 - 在Card外部
+                        val context = LocalContext.current
+                        Button(
+                            onClick = {
+                                val clipboardManager = context.getSystemService(ClipboardManager::class.java)
+                                val clipData = ClipData.newPlainText("AI处理结果", state.fullText)
+                                clipboardManager.setPrimaryClip(clipData)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        ) {
+                            Text("复制结果")
                         }
                     }
                 }
