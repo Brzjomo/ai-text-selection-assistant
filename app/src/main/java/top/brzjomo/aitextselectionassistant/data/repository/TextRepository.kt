@@ -8,6 +8,7 @@ import retrofit2.Response
 import top.brzjomo.aitextselectionassistant.AppContainer
 import top.brzjomo.aitextselectionassistant.data.local.ApiConfig
 import top.brzjomo.aitextselectionassistant.data.local.ApiProvider
+import top.brzjomo.aitextselectionassistant.data.local.ProviderType
 import top.brzjomo.aitextselectionassistant.data.local.PromptTemplate
 import top.brzjomo.aitextselectionassistant.data.remote.model.ChatMessage
 import top.brzjomo.aitextselectionassistant.data.remote.model.ChatRequest
@@ -49,14 +50,18 @@ class TextRepository(private val appContainer: AppContainer) {
         }
 
         val apiConfig = if (apiProvider != null) {
+            // 使用新的服务商系统
+            if (!apiProvider.isValid) {
+                throw IllegalArgumentException("API服务商配置不完整，请检查Base URL、API密钥（如需要）和模型名称")
+            }
             apiProvider.toApiConfig()
         } else {
             // 回退到旧的配置系统
-            userPreferences.apiConfigFlow.firstOrNull() ?: ApiConfig()
-        }
-
-        if (!apiConfig.isValid) {
-            throw IllegalArgumentException("API配置不完整，请先配置API密钥和Base URL")
+            val oldConfig = userPreferences.apiConfigFlow.firstOrNull() ?: ApiConfig()
+            if (!oldConfig.isValid) {
+                throw IllegalArgumentException("API配置不完整，请先配置API密钥和Base URL")
+            }
+            oldConfig
         }
 
         // 2. 获取模板
@@ -92,7 +97,12 @@ class TextRepository(private val appContainer: AppContainer) {
         val response: Response<ResponseBody> = try {
             llmService.chatCompletion(request)
         } catch (e: IOException) {
-            throw IOException("网络连接失败: ${e.message}", e)
+            val errorMessage = if (apiProvider?.providerType == ProviderType.OLLAMA) {
+                "Ollama连接失败: ${e.message}\n\n请检查:\n1. Ollama服务是否正在运行\n2. IP地址和端口是否正确\n3. 网络是否连通\n4. 防火墙是否允许连接"
+            } else {
+                "网络连接失败: ${e.message}"
+            }
+            throw IOException(errorMessage, e)
         } catch (e: Exception) {
             throw RuntimeException("API请求失败: ${e.message}", e)
         }

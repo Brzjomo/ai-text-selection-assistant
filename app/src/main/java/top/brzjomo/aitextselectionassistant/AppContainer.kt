@@ -103,12 +103,33 @@ class AppContainer(private val context: Context) {
             .build()
 
         val retrofit = Retrofit.Builder()
-            .baseUrl(apiConfig.baseUrl)
+            .baseUrl(normalizeBaseUrl(apiConfig.baseUrl))
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
 
         return retrofit.create(LlmService::class.java)
+    }
+
+    /**
+     * 修正base URL格式：
+     * 1. 移除末尾的"/chat/completions"路径（如果存在）
+     * 2. 确保以斜杠结尾
+     */
+    private fun normalizeBaseUrl(url: String): String {
+        var normalized = url.trim()
+
+        // 如果URL包含/chat/completions，移除它（用户可能错误地包含了完整路径）
+        if (normalized.contains("/chat/completions")) {
+            normalized = normalized.substringBefore("/chat/completions")
+        }
+
+        // 确保以斜杠结尾
+        if (!normalized.endsWith("/")) {
+            normalized += "/"
+        }
+
+        return normalized
     }
 
     // 使用 ApiProvider 创建 LlmService 实例
@@ -141,7 +162,7 @@ class AppContainer(private val context: Context) {
             .build()
 
         val retrofit = Retrofit.Builder()
-            .baseUrl(apiProvider.baseUrl)
+            .baseUrl(apiProvider.getNormalizedBaseUrl())
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()

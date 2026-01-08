@@ -208,7 +208,7 @@ private fun EditProviderForm(
                                             model = "gpt-4o-mini"
                                         }
                                         ProviderType.DEEPSEEK -> {
-                                            baseUrl = "https://api.deepseek.com/"
+                                            baseUrl = "https://api.deepseek.com/v1/"
                                             model = "deepseek-chat"
                                         }
                                         ProviderType.OLLAMA -> {
@@ -234,6 +234,19 @@ private fun EditProviderForm(
                 placeholder = @Composable { Text("https://api.openai.com/v1/") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
+            )
+
+            // Base URL格式提示
+            Text(
+                text = when (providerType) {
+                    ProviderType.OPENAI -> "OpenAI API格式: https://api.openai.com/v1/"
+                    ProviderType.DEEPSEEK -> "DeepSeek API格式: https://api.deepseek.com/v1/"
+                    ProviderType.OLLAMA -> "Ollama本地服务格式: http://IP地址:11434/v1/ （如: http://192.168.1.100:11434/v1/）"
+                    ProviderType.CUSTOM -> "自定义API端点格式"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp, top = 2.dp)
             )
 
             if (providerType != ProviderType.OLLAMA) {

@@ -1,7 +1,7 @@
 # AI Text Selection Assistant 开发进度跟踪
 
 **最后更新**: 2026-01-08
-**当前阶段**: 第四阶段UI优化与Markdown渲染已完成，准备进入第五阶段测试与发布
+**当前阶段**: 第四阶段UI优化与Markdown渲染已完成，第五阶段测试与发布进行中，API配置系统已升级为多服务商管理系统
 
 ## 开发阶段概览
 
@@ -92,6 +92,15 @@
      - 翻译成英文、翻译成中文、总结摘要、解释代码、润色文本
    - 实现ViewModel依赖注入，通过Application Context获取依赖
 
+7. **✅ 实现多服务商API配置系统**
+   - 升级API配置为多服务商管理系统，支持OPENAI、DEEPSEEK、OLLAMA、CUSTOM四种类型
+   - 创建完整的服务商CRUD功能：`ApiProvider`实体、`ApiProviderDao`、`ApiProviderRepository`
+   - 实现服务商列表和编辑界面：`ApiProviderListScreen`、`ApiProviderEditScreen`、`ApiProviderViewModel`
+   - 支持Ollama本地服务（无需API Key），智能默认值和动态UI适配
+   - 实现默认服务商设置功能，主界面实时显示当前服务商状态
+   - 数据库从版本1升级到版本2，添加`api_providers`表
+   - 向后兼容：自动从旧的ApiConfig系统迁移，新系统优先使用
+
 #### ✅ 第三阶段：网络层与流式输出（已完成）
 1. **✅ 添加网络库依赖**
    - Retrofit 2.11.0 + OkHttp 4.12.0 + Gson转换器已添加
@@ -140,12 +149,16 @@
 
 #### 第五阶段：测试与发布
 1. **编写测试**
-   - ViewModel单元测试（ProcessTextViewModel、PromptViewModel等）
-   - Repository集成测试（TextRepository、PromptTemplateRepository）
-   - UI测试（ProcessTextActivity、MainScreen界面交互）
+   - ViewModel单元测试（ProcessTextViewModel、PromptViewModel、ApiProviderViewModel等）
+   - Repository集成测试（TextRepository、PromptTemplateRepository、ApiProviderRepository）
+   - UI测试（ProcessTextActivity、MainScreen、ApiProviderListScreen、ApiProviderEditScreen界面交互）
 
 2. **准备发布**
-   - 代码签名配置（生成签名密钥，配置build.gradle）
+   - **✅ 代码签名配置** - 已生成签名密钥并配置build.gradle
+     - 已创建密钥库文件：`app/keystore/aitextselectionassistant.jks`
+     - 已配置签名属性文件：`keystore.properties`（已加入.gitignore）
+     - 已更新`app/build.gradle.kts`支持发布签名
+     - 发布APK构建成功：`app/build/outputs/apk/release/app-release.apk`
    - Google Play发布准备（应用截图、描述、隐私政策等）
    - 兼容性测试（不同Android版本和ROM）
    - 性能优化和内存泄漏检查
@@ -160,7 +173,7 @@
 - ViewModel Compose
 - Material Icons Extended
 - DataStore Preferences 1.1.1
-- Room Database 2.6.1（kapt配置已解决）
+- Room Database 2.6.1（kapt配置已解决，数据库版本2支持API提供者表）
 - Kotlin序列化 1.7.0
 - Kotlin协程 1.8.0
 - Retrofit + OkHttp + Gson（已添加）
@@ -174,9 +187,9 @@
 ### 高优先级
 1. **开始第五阶段测试开发**
    - 配置测试依赖（MockK, Turbine等）
-   - 编写ViewModel单元测试（ProcessTextViewModel、PromptViewModel）
-   - 编写Repository集成测试（TextRepository、PromptTemplateRepository）
-   - 编写UI测试（ProcessTextActivity界面交互）
+   - 编写ViewModel单元测试（ProcessTextViewModel、PromptViewModel、ApiProviderViewModel）
+   - 编写Repository集成测试（TextRepository、PromptTemplateRepository、ApiProviderRepository）
+   - 编写UI测试（ProcessTextActivity界面交互、ApiProviderListScreen、ApiProviderEditScreen）
 
 ### 中优先级
 2. **准备应用发布**
