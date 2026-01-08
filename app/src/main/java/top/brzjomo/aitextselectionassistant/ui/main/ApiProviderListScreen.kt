@@ -111,11 +111,12 @@ fun ApiProviderCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
@@ -149,7 +150,9 @@ fun ApiProviderCard(
                     )
                 }
 
-                Row {
+                Row(
+                    modifier = Modifier.widthIn(min = 96.dp)
+                ) {
                     IconButton(onClick = onEdit) {
                         Icon(Icons.Default.Edit, contentDescription = "编辑")
                     }
@@ -188,12 +191,12 @@ fun ApiProviderCard(
                     color = MaterialTheme.colorScheme.outline
                 )
                 Text(
-                    text = "最大tokens: ${provider.maxTokens}",
+                    text = if (provider.enableAdvancedParams) "最大tokens: ${provider.maxTokens}" else "最大tokens: 模型默认",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline
                 )
                 Text(
-                    text = "温度: ${provider.temperature}",
+                    text = if (provider.enableAdvancedParams) "温度: ${provider.temperature}" else "温度: 模型默认",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline
                 )

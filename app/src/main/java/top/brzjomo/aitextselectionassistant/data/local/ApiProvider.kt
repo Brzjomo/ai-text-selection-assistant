@@ -63,8 +63,8 @@ data class ApiProvider(
             baseUrl = baseUrl,
             model = model,
             enableStreaming = enableStreaming,
-            maxTokens = maxTokens,
-            temperature = temperature
+            maxTokens = if (enableAdvancedParams) maxTokens else 0,
+            temperature = if (enableAdvancedParams) temperature else 0.0
         )
     }
 
