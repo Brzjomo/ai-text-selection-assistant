@@ -14,9 +14,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 import top.brzjomo.aitextselectionassistant.data.local.ApiConfig
 import top.brzjomo.aitextselectionassistant.data.local.AppDatabase
 import top.brzjomo.aitextselectionassistant.data.local.UserPreferences
+import top.brzjomo.aitextselectionassistant.data.local.ApiProvider
 import top.brzjomo.aitextselectionassistant.data.remote.LlmService
 import top.brzjomo.aitextselectionassistant.data.remote.SseParser
 import top.brzjomo.aitextselectionassistant.data.repository.PromptTemplateRepository
+import top.brzjomo.aitextselectionassistant.data.repository.ApiProviderRepository
 import java.util.concurrent.TimeUnit
 
 // DataStore 扩展属性
@@ -29,7 +31,8 @@ class AppContainer(private val context: Context) {
             context,
             AppDatabase::class.java,
             "ai-text-selection-assistant.db"
-        ).build()
+        ).fallbackToDestructiveMigration()
+            .build()
     }
 
     // DataStore 实例
@@ -50,6 +53,16 @@ class AppContainer(private val context: Context) {
     // Repository
     val promptTemplateRepository: PromptTemplateRepository by lazy {
         PromptTemplateRepository(promptTemplateDao)
+    }
+
+    // ApiProvider DAO
+    private val apiProviderDao by lazy {
+        database.apiProviderDao()
+    }
+
+    // Repository
+    val apiProviderRepository: ApiProviderRepository by lazy {
+        ApiProviderRepository(apiProviderDao)
     }
 
     // Gson 实例
@@ -91,6 +104,44 @@ class AppContainer(private val context: Context) {
 
         val retrofit = Retrofit.Builder()
             .baseUrl(apiConfig.baseUrl)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+
+        return retrofit.create(LlmService::class.java)
+    }
+
+    // 使用 ApiProvider 创建 LlmService 实例
+    fun createLlmService(apiProvider: ApiProvider): LlmService {
+        val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)  // 流式响应需要更长的读取超时
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor { chain ->
+                val original = chain.request()
+                val requestBuilder = original.newBuilder()
+                    .header("Content-Type", "application/json")
+                // 只有在有 API Key 时才添加 Authorization 头
+                apiProvider.apiKey?.takeIf { it.isNotBlank() }?.let { apiKey ->
+                    requestBuilder.header("Authorization", "Bearer $apiKey")
+                }
+                chain.proceed(requestBuilder.build())
+            }
+            .apply {
+                // 添加日志拦截器（仅调试模式）
+                val isDebuggable = context.applicationInfo != null &&
+                        (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+                if (isDebuggable) {
+                    val loggingInterceptor = HttpLoggingInterceptor().apply {
+                        level = HttpLoggingInterceptor.Level.BODY
+                    }
+                    addInterceptor(loggingInterceptor)
+                }
+            }
+            .build()
+
+        val retrofit = Retrofit.Builder()
+            .baseUrl(apiProvider.baseUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()

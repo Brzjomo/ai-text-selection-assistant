@@ -4,10 +4,11 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [PromptTemplate::class],
-    version = 1,
+    entities = [PromptTemplate::class, ApiProvider::class],
+    version = 2,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun promptTemplateDao(): PromptTemplateDao
+    abstract fun apiProviderDao(): ApiProviderDao
 }

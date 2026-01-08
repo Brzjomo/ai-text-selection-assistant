@@ -6,17 +6,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Api
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import top.brzjomo.aitextselectionassistant.AITextSelectionAssistantApplication
 
 sealed class MainScreenRoute(val route: String) {
     object Home : MainScreenRoute("home")
@@ -24,6 +30,9 @@ sealed class MainScreenRoute(val route: String) {
     object PromptList : MainScreenRoute("prompt_list")
     object PromptEdit : MainScreenRoute("prompt_edit/{templateId}") {
         fun createRoute(templateId: Long = 0) = "prompt_edit/$templateId"
+    }
+    object ApiProviderEdit : MainScreenRoute("api_provider_edit/{providerId}") {
+        fun createRoute(providerId: Long = 0) = "api_provider_edit/$providerId"
     }
 }
 
@@ -44,7 +53,11 @@ fun MainScreen() {
         }
 
         composable(MainScreenRoute.ApiConfig.route) {
-            ApiConfigScreen()
+            ApiProviderListScreen(
+                onEditProvider = { providerId ->
+                    navController.navigate(MainScreenRoute.ApiProviderEdit.createRoute(providerId))
+                }
+            )
         }
 
         composable(MainScreenRoute.PromptList.route) {
@@ -62,6 +75,14 @@ fun MainScreen() {
                 onBack = { navController.popBackStack() }
             )
         }
+
+        composable(MainScreenRoute.ApiProviderEdit.route) { backStackEntry ->
+            val providerId = backStackEntry.arguments?.getString("providerId")?.toLongOrNull() ?: 0L
+            ApiProviderEditScreen(
+                providerId = providerId,
+                onBack = { navController.popBackStack() }
+            )
+        }
     }
 }
 
@@ -71,6 +92,32 @@ private fun HomeScreen(
     onApiConfigClick: () -> Unit,
     onPromptManageClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val viewModel = viewModel<ApiProviderViewModel>(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(ApiProviderViewModel::class.java)) {
+                    return ApiProviderViewModel(context) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+            }
+        }
+    )
+    val uiState by viewModel.uiState.collectAsState()
+
+    // 获取当前默认服务商
+    val currentProvider = when (val state = uiState) {
+        is ApiProviderUiState.Success -> {
+            state.providers.find { it.isDefault } ?: state.providers.firstOrNull()
+        }
+        ApiProviderUiState.Loading -> null
+        is ApiProviderUiState.Error -> null
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadProviders()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -102,6 +149,64 @@ private fun HomeScreen(
             )
 
             Spacer(modifier = Modifier.height(48.dp))
+
+            // 当前服务商卡片
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                onClick = onApiConfigClick
+            ) {
+                Row(
+                    modifier = Modifier.padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Api,
+                        contentDescription = "当前服务商",
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = if (currentProvider != null) "当前服务商" else "未配置服务商",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = if (currentProvider != null) {
+                                "${currentProvider.name} (${currentProvider.providerType.name})"
+                            } else {
+                                "点击配置您的 API 服务商"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (currentProvider != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "模型: ${currentProvider.model}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
+                    }
+
+                    // 下拉箭头指示可点击
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = "点击配置",
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
             FeatureCard(
                 title = "API 配置",

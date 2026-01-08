@@ -7,6 +7,7 @@ import okhttp3.ResponseBody
 import retrofit2.Response
 import top.brzjomo.aitextselectionassistant.AppContainer
 import top.brzjomo.aitextselectionassistant.data.local.ApiConfig
+import top.brzjomo.aitextselectionassistant.data.local.ApiProvider
 import top.brzjomo.aitextselectionassistant.data.local.PromptTemplate
 import top.brzjomo.aitextselectionassistant.data.remote.model.ChatMessage
 import top.brzjomo.aitextselectionassistant.data.remote.model.ChatRequest
@@ -16,6 +17,7 @@ class TextRepository(private val appContainer: AppContainer) {
 
     private val userPreferences = appContainer.userPreferences
     private val promptTemplateRepository = appContainer.promptTemplateRepository
+    private val apiProviderRepository = appContainer.apiProviderRepository
     private val sseParser = appContainer.sseParser
 
     // 模板引擎：简单替换 {{text}} 占位符
@@ -33,9 +35,27 @@ class TextRepository(private val appContainer: AppContainer) {
         selectedText: String,
         templateId: Long? = null
     ): Flow<String> = flow {
-        // 1. 获取API配置
-        val apiConfig = userPreferences.apiConfigFlow.firstOrNull() ?: ApiConfig()
-        if (apiConfig.apiKey.isBlank() || apiConfig.baseUrl.isBlank()) {
+        // 1. 获取API配置（优先使用新的服务商系统）
+        val apiProvider = try {
+            val defaultProvider = apiProviderRepository.getDefaultProvider()
+            if (defaultProvider != null) {
+                defaultProvider
+            } else {
+                val allProviders = apiProviderRepository.getAllProviders().firstOrNull()
+                allProviders?.firstOrNull()
+            }
+        } catch (e: Exception) {
+            null
+        }
+
+        val apiConfig = if (apiProvider != null) {
+            apiProvider.toApiConfig()
+        } else {
+            // 回退到旧的配置系统
+            userPreferences.apiConfigFlow.firstOrNull() ?: ApiConfig()
+        }
+
+        if (!apiConfig.isValid) {
             throw IllegalArgumentException("API配置不完整，请先配置API密钥和Base URL")
         }
 
@@ -64,7 +84,11 @@ class TextRepository(private val appContainer: AppContainer) {
         )
 
         // 5. 创建LlmService并发送请求
-        val llmService = appContainer.createLlmService(apiConfig)
+        val llmService = if (apiProvider != null) {
+            appContainer.createLlmService(apiProvider)
+        } else {
+            appContainer.createLlmService(apiConfig)
+        }
         val response: Response<ResponseBody> = try {
             llmService.chatCompletion(request)
         } catch (e: IOException) {
