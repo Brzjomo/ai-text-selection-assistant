@@ -11,5 +11,6 @@ data class PromptTemplate(
     val content: String,
     val description: String = "",
     val createdAt: Long = System.currentTimeMillis(),
+    val position: Int = 0,
     val updatedAt: Long = System.currentTimeMillis()
 )

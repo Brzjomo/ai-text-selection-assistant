@@ -15,7 +15,8 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:jitpack.io)",
       "Bash(bash gradlew:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(./gradlew.bat:*)"
     ]
   }
 }

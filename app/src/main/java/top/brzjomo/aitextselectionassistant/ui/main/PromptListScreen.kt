@@ -1,8 +1,12 @@
 package top.brzjomo.aitextselectionassistant.ui.main
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.draggable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -12,18 +16,25 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import top.brzjomo.aitextselectionassistant.AITextSelectionAssistantApplication
 import top.brzjomo.aitextselectionassistant.data.local.PromptTemplate
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PromptListScreen(
     onEditTemplate: (Long) -> Unit = {},
@@ -46,6 +57,13 @@ fun PromptListScreen(
         PromptUiState.Loading -> emptyList()
         is PromptUiState.Error -> emptyList()
     }
+
+    // Local reorderable list state
+    val scope = rememberCoroutineScope()
+    val reorderableTemplates = remember(templates) { templates.toMutableStateList() }
+    var draggedIndex by remember { mutableIntStateOf(-1) }
+    var dragOffset by remember { mutableStateOf(0f) }
+    var isDragging by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadTemplates()
@@ -87,11 +105,53 @@ fun PromptListScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(16.dp)
             ) {
-                items(templates) { template ->
+                itemsIndexed(reorderableTemplates) { index, template ->
+                    val density = LocalDensity.current
+                    val modifier = Modifier.pointerInput(index) {
+                        detectDragGestures(
+                            onDragStart = { offset ->
+                                draggedIndex = index
+                                isDragging = true
+                                dragOffset = 0f
+                            },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                dragOffset += dragAmount.y
+                            },
+                            onDragEnd = {
+                                isDragging = false
+                                // Determine target index based on drag offset
+                                with(density) {
+                                    val threshold = 50.dp.toPx()
+                                    val delta = if (dragOffset > threshold) 1 else if (dragOffset < -threshold) -1 else 0
+                                    val targetIndex = (index + delta).coerceIn(0, reorderableTemplates.lastIndex)
+                                    if (targetIndex != index) {
+                                        // Swap items
+                                        val list = reorderableTemplates
+                                        val item = list.removeAt(index)
+                                        list.add(targetIndex, item)
+                                        // Update order in ViewModel
+                                        scope.launch {
+                                            viewModel.reorderTemplates(reorderableTemplates.toList())
+                                            viewModel.loadTemplates()
+                                        }
+                                    }
+                                }
+                                draggedIndex = -1
+                                dragOffset = 0f
+                            },
+                            onDragCancel = {
+                                isDragging = false
+                                draggedIndex = -1
+                                dragOffset = 0f
+                            }
+                        )
+                    }
                     PromptTemplateCard(
                         template = template,
                         onEdit = { onEditTemplate(template.id) },
-                        onDelete = { viewModel.deleteTemplate(template) }
+                        onDelete = { viewModel.deleteTemplate(template) },
+                        modifier = modifier
                     )
                 }
             }
@@ -104,10 +164,11 @@ fun PromptListScreen(
 fun PromptTemplateCard(
     template: PromptTemplate,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         onClick = onEdit
     ) {
         Column(

@@ -114,6 +114,9 @@ dependencies {
     implementation(libs.richtext.markdown)
     implementation(libs.richtext.ui.material3)
 
+    // Foundation for ReorderableLazyColumn
+    implementation("androidx.compose.foundation:foundation")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

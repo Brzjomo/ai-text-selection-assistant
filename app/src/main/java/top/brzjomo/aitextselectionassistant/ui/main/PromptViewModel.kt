@@ -83,7 +83,13 @@ class PromptViewModel(
             val currentTemplate = _editState.value.template
             try {
                 if (currentTemplate.id == 0L) {
-                    repository.insertTemplate(currentTemplate)
+                    // 获取最大位置，新模板放在最后
+                    val maxPosition = repository.getMaxPosition()
+                    val newTemplate = currentTemplate.copy(
+                        position = maxPosition + 1,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    repository.insertTemplate(newTemplate)
                 } else {
                     repository.updateTemplate(currentTemplate.copy(updatedAt = System.currentTimeMillis()))
                 }
@@ -124,5 +130,24 @@ class PromptViewModel(
 
     fun cancelEdit() {
         _editState.value = PromptEditState()
+    }
+
+    fun updateTemplatePosition(templateId: Long, newPosition: Int) {
+        viewModelScope.launch {
+            try {
+                repository.updateTemplatePosition(templateId, newPosition)
+                loadTemplates()
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
+
+    suspend fun reorderTemplates(newOrder: List<PromptTemplate>) {
+        newOrder.forEachIndexed { index, template ->
+            if (template.position != index) {
+                repository.updateTemplatePosition(template.id, index)
+            }
+        }
     }
 }
