@@ -1,11 +1,11 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     kotlin("kapt")
 }
-
-import java.util.Properties
 
 // Load keystore properties
 val keystoreProperties = Properties()
@@ -55,8 +55,6 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
-//        languageVersion = "1.9"
-//        apiVersion = "1.9"
     }
     buildFeatures {
         compose = true
