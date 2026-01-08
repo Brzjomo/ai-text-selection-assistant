@@ -16,6 +16,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,6 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -96,6 +99,9 @@ fun ProcessTextScreen(
     // 选中的模板ID状态
     var selectedTemplateId by remember { mutableLongStateOf(0L) }
 
+    // 选中的文本展开状态（默认折叠）
+    var isTextExpanded by remember { mutableStateOf(false) }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -132,24 +138,64 @@ fun ProcessTextScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 选中的文本显示
+            // 选中的文本显示（可折叠）
             Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
                 ) {
-                    Text(
-                        text = "选中的文本：",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = selectedText,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    // 可点击的标题行
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "选中的文本：",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        IconButton(
+                            onClick = { isTextExpanded = !isTextExpanded },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isTextExpanded)
+                                    Icons.Filled.ExpandLess
+                                else
+                                    Icons.Filled.ExpandMore,
+                                contentDescription = if (isTextExpanded)
+                                    "折叠选中的文本"
+                                else
+                                    "展开选中的文本",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // 条件显示文本内容
+                    if (isTextExpanded) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = selectedText,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    } else {
+                        // 折叠状态下显示摘要（前50字符+省略号）
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = if (selectedText.length > 50)
+                                "${selectedText.take(50)}..."
+                            else
+                                selectedText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontStyle = FontStyle.Italic
+                        )
+                    }
                 }
             }
 
