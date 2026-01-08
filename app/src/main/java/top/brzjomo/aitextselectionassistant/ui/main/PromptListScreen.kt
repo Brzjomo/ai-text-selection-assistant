@@ -22,6 +22,7 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -31,6 +32,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import top.brzjomo.aitextselectionassistant.AITextSelectionAssistantApplication
 import top.brzjomo.aitextselectionassistant.data.local.PromptTemplate
 
@@ -62,7 +64,8 @@ fun PromptListScreen(
     val scope = rememberCoroutineScope()
     val reorderableTemplates = remember(templates) { templates.toMutableStateList() }
     var draggedIndex by remember { mutableIntStateOf(-1) }
-    var dragOffset by remember { mutableStateOf(0f) }
+    var startDragIndex by remember { mutableIntStateOf(-1) }
+    var totalDragOffset by remember { mutableStateOf(0f) }
     var isDragging by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -107,43 +110,55 @@ fun PromptListScreen(
             ) {
                 itemsIndexed(reorderableTemplates) { index, template ->
                     val density = LocalDensity.current
-                    val modifier = Modifier.pointerInput(index) {
+                    val modifier = Modifier.pointerInput(template.id) {
                         detectDragGestures(
                             onDragStart = { offset ->
+                                startDragIndex = index
                                 draggedIndex = index
                                 isDragging = true
-                                dragOffset = 0f
+                                totalDragOffset = 0f
                             },
                             onDrag = { change, dragAmount ->
                                 change.consume()
-                                dragOffset += dragAmount.y
+                                totalDragOffset += dragAmount.y
+
+                                // Real-time reordering during drag
+                                with(density) {
+                                    val itemHeight = 80.dp.toPx() // Reduced height for better sensitivity
+                                    // Calculate target position based on total drag offset from start
+                                    val delta = (totalDragOffset / itemHeight).roundToInt()
+                                    val targetIndex = (startDragIndex + delta).coerceIn(0, reorderableTemplates.lastIndex)
+
+                                    if (targetIndex != draggedIndex) {
+                                        // Move the dragged item to new position
+                                        val list = reorderableTemplates
+                                        val item = list.removeAt(draggedIndex)
+                                        // Adjust target index after removal
+                                        val adjustedTargetIndex = if (targetIndex > draggedIndex) targetIndex - 1 else targetIndex
+                                        list.add(adjustedTargetIndex, item)
+                                        // Update dragged index to new position (actual position)
+                                        draggedIndex = adjustedTargetIndex
+                                        // Adjust total drag offset to match new position
+                                        totalDragOffset = (adjustedTargetIndex - startDragIndex) * itemHeight
+                                    }
+                                }
                             },
                             onDragEnd = {
                                 isDragging = false
-                                // Determine target index based on drag offset
-                                with(density) {
-                                    val threshold = 50.dp.toPx()
-                                    val delta = if (dragOffset > threshold) 1 else if (dragOffset < -threshold) -1 else 0
-                                    val targetIndex = (index + delta).coerceIn(0, reorderableTemplates.lastIndex)
-                                    if (targetIndex != index) {
-                                        // Swap items
-                                        val list = reorderableTemplates
-                                        val item = list.removeAt(index)
-                                        list.add(targetIndex, item)
-                                        // Update order in ViewModel
-                                        scope.launch {
-                                            viewModel.reorderTemplates(reorderableTemplates.toList())
-                                            viewModel.loadTemplates()
-                                        }
-                                    }
+                                // Final update to ViewModel after drag ends
+                                scope.launch {
+                                    viewModel.reorderTemplates(reorderableTemplates.toList())
+                                    viewModel.loadTemplates()
                                 }
                                 draggedIndex = -1
-                                dragOffset = 0f
+                                startDragIndex = -1
+                                totalDragOffset = 0f
                             },
                             onDragCancel = {
                                 isDragging = false
                                 draggedIndex = -1
-                                dragOffset = 0f
+                                startDragIndex = -1
+                                totalDragOffset = 0f
                             }
                         )
                     }
@@ -151,7 +166,8 @@ fun PromptListScreen(
                         template = template,
                         onEdit = { onEditTemplate(template.id) },
                         onDelete = { viewModel.deleteTemplate(template) },
-                        modifier = modifier
+                        modifier = modifier,
+                        isBeingDragged = index == draggedIndex && isDragging
                     )
                 }
             }
@@ -165,10 +181,25 @@ fun PromptTemplateCard(
     template: PromptTemplate,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isBeingDragged: Boolean = false
 ) {
+    val cardModifier = if (isBeingDragged) {
+        modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                shadowElevation = 16.dp.toPx()
+                alpha = 0.9f
+                scaleX = 1.02f
+                scaleY = 1.02f
+                translationY = -8.dp.toPx()
+            }
+    } else {
+        modifier.fillMaxWidth()
+    }
+
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = cardModifier,
         onClick = onEdit
     ) {
         Column(
