@@ -46,30 +46,30 @@ fun PromptEditScreen(
     val editState by viewModel.editState.collectAsState()
 
     LaunchedEffect(templateId) {
-        if (templateId != null && templateId > 0) {
-            // 这里应该加载特定模板，但当前ViewModel不支持
-            // 暂时依赖外部调用startEditTemplate
+        when {
+            templateId == null || templateId == 0L -> {
+                viewModel.startAddTemplate()
+            }
+            templateId > 0 -> {
+                viewModel.loadTemplate(templateId)
+            }
         }
     }
 
-    if (editState.isEditing) {
-        EditTemplateForm(
-            template = editState.template,
-            onTemplateChange = { updatedTemplate ->
-                viewModel.updateEditTemplate(updatedTemplate)
-            },
-            onSave = {
-                viewModel.saveTemplate()
-                onBack()
-            },
-            onCancel = {
-                viewModel.cancelEdit()
-                onBack()
-            }
-        )
-    } else {
-        onBack()
-    }
+    EditTemplateForm(
+        template = editState.template,
+        onTemplateChange = { updatedTemplate ->
+            viewModel.updateEditTemplate(updatedTemplate)
+        },
+        onSave = {
+            viewModel.saveTemplate()
+            onBack()
+        },
+        onCancel = {
+            viewModel.cancelEdit()
+            onBack()
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

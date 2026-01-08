@@ -57,7 +57,7 @@ fun PromptListScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { viewModel.startAddTemplate() }
+                onClick = { onEditTemplate(0L) }
             ) {
                 Icon(Icons.Default.Add, contentDescription = "添加模板")
             }
@@ -83,7 +83,7 @@ fun PromptListScreen(
                 items(templates) { template ->
                     PromptTemplateCard(
                         template = template,
-                        onEdit = { viewModel.startEditTemplate(template) },
+                        onEdit = { onEditTemplate(template.id) },
                         onDelete = { viewModel.deleteTemplate(template) }
                     )
                 }

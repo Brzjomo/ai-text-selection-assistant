@@ -106,6 +106,22 @@ class PromptViewModel(
         }
     }
 
+    fun loadTemplate(id: Long) {
+        viewModelScope.launch {
+            try {
+                val template = repository.getTemplateById(id)
+                if (template != null) {
+                    _editState.value = PromptEditState(
+                        template = template.copy(),
+                        isEditing = true
+                    )
+                }
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
+
     fun cancelEdit() {
         _editState.value = PromptEditState()
     }
