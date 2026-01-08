@@ -1,6 +1,7 @@
 package top.brzjomo.aitextselectionassistant.ui.main
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -180,7 +181,8 @@ private fun ApiConfigForm(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "启用流式输出",
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.clickable { enableStreaming = !enableStreaming }
             )
         }
 
