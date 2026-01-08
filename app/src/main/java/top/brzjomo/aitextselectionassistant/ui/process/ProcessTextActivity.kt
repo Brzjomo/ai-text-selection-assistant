@@ -24,6 +24,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -93,6 +94,8 @@ fun ProcessTextScreen(
 ) {
     val context = LocalContext.current
     val activity = context as Activity
+    val configuration = LocalConfiguration.current
+    val maxHeight = (configuration.screenHeightDp * 0.8).dp
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -103,12 +106,19 @@ fun ProcessTextScreen(
     var isTextExpanded by remember { mutableStateOf(false) }
 
     Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .heightIn(max = maxHeight),
+        color = MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
+        shape = MaterialTheme.shapes.medium,
+        tonalElevation = 8.dp,
+        shadowElevation = 8.dp
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .wrapContentHeight()
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -213,7 +223,10 @@ fun ProcessTextScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // 处理结果区域
-            when (val state = uiState) {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                when (val state = uiState) {
                 is ProcessTextUiState.Idle -> {
                     // 空闲状态：显示提示和开始按钮
                     Text(
@@ -251,7 +264,9 @@ fun ProcessTextScreen(
                         )
                     ) {
                         Column(
-                            modifier = Modifier.padding(16.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
                         ) {
                             Text(
                                 text = "处理结果：",
@@ -259,9 +274,13 @@ fun ProcessTextScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(8.dp))
+                            // Markdown文本可滚动
                             MarkdownText(
                                 content = state.accumulatedText,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                                    .verticalScroll(rememberScrollState())
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             if (state.newChunk.isNotEmpty()) {
@@ -306,7 +325,9 @@ fun ProcessTextScreen(
                         )
                     ) {
                         Column(
-                            modifier = Modifier.padding(16.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
                         ) {
                             Text(
                                 text = "处理完成：",
@@ -314,9 +335,13 @@ fun ProcessTextScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(8.dp))
+                            // Markdown文本可滚动
                             MarkdownText(
                                 content = state.fullText,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                                    .verticalScroll(rememberScrollState())
                             )
                             Spacer(modifier = Modifier.height(16.dp))
 
@@ -369,6 +394,7 @@ fun ProcessTextScreen(
                         }
                     }
                 }
+            }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
