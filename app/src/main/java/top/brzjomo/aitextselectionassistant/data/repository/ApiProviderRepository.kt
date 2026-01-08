@@ -15,6 +15,7 @@ class ApiProviderRepository(private val apiProviderDao: ApiProviderDao) {
     suspend fun insertProvider(apiProvider: ApiProvider): Long {
         val id = apiProviderDao.insert(apiProvider)
         if (apiProvider.isDefault) {
+            apiProviderDao.clearDefault()
             apiProviderDao.setDefault(id)
         }
         return id
@@ -23,6 +24,7 @@ class ApiProviderRepository(private val apiProviderDao: ApiProviderDao) {
     suspend fun updateProvider(apiProvider: ApiProvider) {
         apiProviderDao.update(apiProvider)
         if (apiProvider.isDefault) {
+            apiProviderDao.clearDefault()
             apiProviderDao.setDefault(apiProvider.id)
         }
     }
