@@ -50,7 +50,7 @@ class ApiProviderViewModel(
 
     init {
         viewModelScope.launch {
-            migrateFromOldConfig()
+            // migrateFromOldConfig()  // 已禁用自动迁移，避免自动创建"从旧配置升级"服务商
             loadProviders()
         }
     }
@@ -188,7 +188,14 @@ class ApiProviderViewModel(
             isDefault = true
         )
 
-        repository.insertProvider(newProvider)
+        try {
+            repository.insertProvider(newProvider)
+            // 迁移成功后清除旧的配置
+            userPreferences.clearApiConfig()
+        } catch (e: Exception) {
+            // 插入失败，保留旧配置以便下次重试
+            // 可以记录日志或忽略异常
+        }
     }
 
     fun cancelEdit() {
