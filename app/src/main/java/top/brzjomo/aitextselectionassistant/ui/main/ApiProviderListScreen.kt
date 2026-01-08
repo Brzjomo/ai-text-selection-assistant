@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
@@ -29,7 +30,8 @@ import top.brzjomo.aitextselectionassistant.data.local.ApiProvider
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ApiProviderListScreen(
-    onEditProvider: (Long) -> Unit = {}
+    onEditProvider: (Long) -> Unit = {},
+    onBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val viewModel = viewModel<ApiProviderViewModel>(
@@ -56,7 +58,12 @@ fun ApiProviderListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("API 服务商管理") }
+                title = { Text("API 服务商管理") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    }
+                }
             )
         },
         floatingActionButton = {

@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
@@ -25,7 +26,8 @@ import top.brzjomo.aitextselectionassistant.data.local.PromptTemplate
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PromptListScreen(
-    onEditTemplate: (Long) -> Unit = {}
+    onEditTemplate: (Long) -> Unit = {},
+    onBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val viewModel = viewModel<PromptViewModel>(
@@ -52,7 +54,12 @@ fun PromptListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Prompt 模板管理") }
+                title = { Text("Prompt 模板管理") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    }
+                }
             )
         },
         floatingActionButton = {

@@ -61,7 +61,8 @@ fun MainScreen() {
             ApiProviderListScreen(
                 onEditProvider = { providerId ->
                     navController.navigate(MainScreenRoute.ApiProviderEdit.createRoute(providerId))
-                }
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -69,7 +70,8 @@ fun MainScreen() {
             PromptListScreen(
                 onEditTemplate = { templateId ->
                     navController.navigate(MainScreenRoute.PromptEdit.createRoute(templateId))
-                }
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 
