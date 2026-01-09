@@ -241,7 +241,7 @@ private fun HomeScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "1. 在任意应用中选中文本\n2. 点击分享或更多选项\n3. 选择 \"AI 助手\"\n4. 使用模板处理文本",
+                        text = "1. 在任意应用中选中文本\n2. 点击分享或更多选项\n3. 选择 \"AI 划词助手\"\n4. 使用模板处理文本",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }

@@ -34,9 +34,41 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 3
-        versionName = "1.0.2"
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // 辅助函数：从 strings.xml 中读取 app_name
+    fun getAppName(): String {
+        val stringsFile = file("src/main/res/values/strings.xml")
+        return if (stringsFile.exists()) {
+            // 使用正则简单的匹配 <string name="app_name">...</string>
+            val content = stringsFile.readText()
+            val regex = "<string name=\"app_name\">([^<]*)</string>".toRegex()
+            regex.find(content)?.groupValues?.get(1) ?: "App"
+        } else {
+            "App"
+        }
+    }
+
+    applicationVariants.all {
+        val variant = this
+        variant.outputs
+            .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
+            .forEach { output ->
+                // 获取应用名称 (你也可以硬编码为 "AiAssistant")
+                val appName = getAppName()
+                // 获取版本号，例如 1.0.0
+                val versionName = variant.versionName
+                // 获取构建类型，例如 debug 或 release
+                val buildType = variant.buildType.name
+
+                // 拼接新文件名，例如：AiAssistant_v1.0.0_debug.apk
+                val newFileName = "${appName}_v${versionName}_${buildType}.apk"
+
+                output.outputFileName = newFileName
+            }
     }
 
     buildTypes {

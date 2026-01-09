@@ -1,5 +1,6 @@
 package top.brzjomo.aitextselectionassistant.data.repository
 
+import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
@@ -15,6 +16,9 @@ import top.brzjomo.aitextselectionassistant.data.remote.model.ChatRequest
 import java.io.IOException
 
 class TextRepository(private val appContainer: AppContainer) {
+    companion object {
+        private const val TAG = "TextRepository"
+    }
 
     private val userPreferences = appContainer.userPreferences
     private val promptTemplateRepository = appContainer.promptTemplateRepository
@@ -80,6 +84,10 @@ class TextRepository(private val appContainer: AppContainer) {
             ChatMessage(role = "user", content = renderedContent)
         )
 
+        Log.d(TAG, "构建ChatRequest: model=${apiConfig.model}, enableStreaming=${apiConfig.enableStreaming}, " +
+                "maxTokens=${if (apiConfig.maxTokens > 0) apiConfig.maxTokens else "null"}, " +
+                "temperature=${apiConfig.temperature.takeIf { it > 0.0 }}")
+
         val request = ChatRequest(
             model = apiConfig.model,
             messages = messages,
@@ -94,6 +102,8 @@ class TextRepository(private val appContainer: AppContainer) {
         } else {
             appContainer.createLlmService(apiConfig)
         }
+
+        Log.d(TAG, "发送API请求，stream=${apiConfig.enableStreaming}")
         val response: Response<ResponseBody> = try {
             llmService.chatCompletion(request)
         } catch (e: IOException) {
@@ -114,8 +124,10 @@ class TextRepository(private val appContainer: AppContainer) {
 
         val responseBody = response.body() ?: throw IOException("响应体为空")
 
+        Log.d(TAG, "开始解析流式响应，response.isSuccessful=${response.isSuccessful}")
         // 6. 解析流式响应
         sseParser.parseStream(responseBody.byteStream()).collect { chunk ->
+            Log.d(TAG, "收到chunk: '${chunk}' (长度=${chunk.length})")
             emit(chunk)
         }
     }

@@ -1,5 +1,6 @@
 package top.brzjomo.aitextselectionassistant.ui.process
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
@@ -25,6 +26,9 @@ sealed class ProcessTextEvent {
 class ProcessTextViewModel(
     private val textRepository: TextRepository
 ) : ViewModel() {
+    companion object {
+        private const val TAG = "ProcessTextViewModel"
+    }
 
     private val _uiState = MutableStateFlow<ProcessTextUiState>(ProcessTextUiState.Idle)
     val uiState: StateFlow<ProcessTextUiState> = _uiState.asStateFlow()
@@ -45,13 +49,16 @@ class ProcessTextViewModel(
         currentProcessingJob?.cancel()
 
         currentProcessingJob = viewModelScope.launch {
+            Log.d(TAG, "开始处理文本，设置状态为Loading")
             _uiState.value = ProcessTextUiState.Loading
 
             try {
                 var accumulatedText = ""
 
                 textRepository.processText(selectedText, templateId).collect { chunk ->
+                    Log.d(TAG, "收到chunk: '${chunk}' (长度=${chunk.length})")
                     accumulatedText += chunk
+                    Log.d(TAG, "累积文本长度: ${accumulatedText.length}, 设置状态为Processing")
                     _uiState.value = ProcessTextUiState.Processing(
                         accumulatedText = accumulatedText,
                         newChunk = chunk
@@ -59,16 +66,20 @@ class ProcessTextViewModel(
                 }
 
                 // 流式处理完成
+                Log.d(TAG, "流式处理完成，总文本长度: ${accumulatedText.length}, 设置状态为Success")
                 _uiState.value = ProcessTextUiState.Success(fullText = accumulatedText)
             } catch (e: IOException) {
+                Log.e(TAG, "IOException: ${e.message}", e)
                 _uiState.value = ProcessTextUiState.Error(
                     message = "网络错误: ${e.message ?: "请检查网络连接和API配置"}"
                 )
             } catch (e: IllegalArgumentException) {
+                Log.e(TAG, "IllegalArgumentException: ${e.message}", e)
                 _uiState.value = ProcessTextUiState.Error(
                     message = "配置错误: ${e.message ?: "请检查API配置和模板设置"}"
                 )
             } catch (e: Exception) {
+                Log.e(TAG, "Exception: ${e.message}", e)
                 _uiState.value = ProcessTextUiState.Error(
                     message = "处理失败: ${e.message ?: "未知错误"}"
                 )
