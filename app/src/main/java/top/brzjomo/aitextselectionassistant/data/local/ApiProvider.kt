@@ -29,7 +29,7 @@ data class ApiProvider(
     val enableStreaming: Boolean = true,
 
     @ColumnInfo(name = "max_tokens")
-    val maxTokens: Int = 2000,
+    val maxTokens: Int = 128000,
 
     @ColumnInfo(name = "temperature")
     val temperature: Double = 0.7,
@@ -113,7 +113,7 @@ data class ApiProvider(
             return params
         }
 
-        val lines = customParameters!!.trim().lines()
+        val lines = customParameters.trim().lines()
         for (line in lines) {
             val trimmedLine = line.trim()
             if (trimmedLine.isEmpty() || trimmedLine.startsWith("#")) {
@@ -125,7 +125,7 @@ data class ApiProvider(
                 continue // 无效格式，跳过
             }
 
-            val key = trimmedLine.substring(0, colonIndex).trim()
+            val key = trimmedLine.take(colonIndex).trim()
             var valueStr = trimmedLine.substring(colonIndex + 1).trim()
 
             // 尝试解析值

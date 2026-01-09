@@ -126,7 +126,7 @@ private fun ApiConfigForm(
             baseUrl = baseUrl,
             model = model,
             enableStreaming = enableStreaming,
-            maxTokens = maxTokens.toIntOrNull() ?: 2000,
+            maxTokens = maxTokens.toIntOrNull() ?: 128000,
             temperature = temperature.toDoubleOrNull() ?: 0.7
         )
         onApiConfigChanged(newConfig)
@@ -189,7 +189,7 @@ private fun ApiConfigForm(
             value = maxTokens,
             onValueChange = { maxTokens = it },
             label = @Composable { Text("最大 tokens") },
-            placeholder = @Composable { Text("2000") },
+            placeholder = @Composable { Text("128000") },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )

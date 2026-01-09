@@ -26,7 +26,7 @@ class UserPreferences(
             baseUrl = preferences[BASE_URL] ?: "https://api.openai.com/v1/",
             model = preferences[MODEL] ?: "gpt-4o-mini",
             enableStreaming = preferences[ENABLE_STREAMING] ?: true,
-            maxTokens = preferences[MAX_TOKENS]?.toIntOrNull() ?: 2000,
+            maxTokens = preferences[MAX_TOKENS]?.toIntOrNull() ?: 128000,
             temperature = preferences[TEMPERATURE]?.toDoubleOrNull() ?: 0.7
         )
     }
@@ -59,7 +59,7 @@ data class ApiConfig(
     val baseUrl: String = "https://api.openai.com/v1/",
     val model: String = "gpt-4o-mini",
     val enableStreaming: Boolean = true,
-    val maxTokens: Int = 2000,
+    val maxTokens: Int = 128000,
     val temperature: Double = 0.7
 ) {
     val isValid: Boolean get() = apiKey.isNotBlank() && baseUrl.isNotBlank()

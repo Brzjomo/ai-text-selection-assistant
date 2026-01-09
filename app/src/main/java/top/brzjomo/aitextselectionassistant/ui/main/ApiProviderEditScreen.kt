@@ -124,15 +124,15 @@ private fun EditProviderForm(
             name = name,
             providerType = providerType,
             baseUrl = baseUrl,
-            apiKey = if (apiKey.isNotBlank()) apiKey else null,
+            apiKey = apiKey.ifBlank { null },
             model = model,
             enableStreaming = enableStreaming,
-            maxTokens = maxTokens.toIntOrNull() ?: 2000,
+            maxTokens = maxTokens.toIntOrNull() ?: 128000,
             temperature = temperature.toDoubleOrNull() ?: 0.7,
             isDefault = isDefault,
             enableAdvancedParams = enableAdvancedParams,
             topP = topP.toDoubleOrNull() ?: 1.0,
-            customParameters = if (customParameters.isNotBlank()) customParameters else null
+            customParameters = customParameters.ifBlank { null }
         )
         onProviderChange(newProvider)
     }
@@ -206,7 +206,7 @@ private fun EditProviderForm(
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
-                        ProviderType.values().forEach { type ->
+                        ProviderType.entries.forEach { type ->
                             DropdownMenuItem(
                                 text = { Text(type.name) },
                                 onClick = {
@@ -322,7 +322,7 @@ private fun EditProviderForm(
                     value = maxTokens,
                     onValueChange = { maxTokens = it },
                     label = @Composable { Text("最大 tokens") },
-                    placeholder = @Composable { Text("2000") },
+                    placeholder = @Composable { Text("128000") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
