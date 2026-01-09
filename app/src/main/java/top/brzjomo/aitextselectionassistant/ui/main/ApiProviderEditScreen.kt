@@ -100,41 +100,61 @@ private fun EditProviderForm(
     var customParameters by remember { mutableStateOf(provider.customParameters ?: "") }
     var showApiKey by remember { mutableStateOf(false) }
 
+    // 跟踪上一次的provider ID，用于检测是否是新的provider
+    var lastProviderId by remember { mutableLongStateOf(provider.id) }
+
+    // 当外部provider变化时（初始加载或切换服务商），更新所有状态
     LaunchedEffect(provider) {
-        name = provider.name
-        providerType = provider.providerType
-        baseUrl = provider.baseUrl
-        apiKey = provider.apiKey ?: ""
-        model = provider.model
-        enableStreaming = provider.enableStreaming
-        maxTokens = provider.maxTokens.toString()
-        temperature = provider.temperature.toString()
-        isDefault = provider.isDefault
-        enableAdvancedParams = provider.enableAdvancedParams
-        topP = provider.topP.toString()
-        customParameters = provider.customParameters ?: ""
+        // 如果provider.id发生变化，说明是新的provider（初始加载或切换）
+        if (provider.id != lastProviderId) {
+            name = provider.name
+            providerType = provider.providerType
+            baseUrl = provider.baseUrl
+            apiKey = provider.apiKey ?: ""
+            model = provider.model
+            enableStreaming = provider.enableStreaming
+            maxTokens = provider.maxTokens.toString()
+            temperature = provider.temperature.toString()
+            isDefault = provider.isDefault
+            enableAdvancedParams = provider.enableAdvancedParams
+            topP = provider.topP.toString()
+            customParameters = provider.customParameters ?: ""
+            lastProviderId = provider.id
+        }
     }
 
-    LaunchedEffect(
+    // 构建用于验证的provider（只包含基本字段）
+    val validationProvider = remember(
         name, providerType, baseUrl, apiKey, model,
-        enableStreaming, maxTokens, temperature, isDefault,
-        enableAdvancedParams, topP, customParameters
+        enableStreaming, isDefault, enableAdvancedParams
     ) {
-        val newProvider = provider.copy(
+        provider.copy(
             name = name,
             providerType = providerType,
             baseUrl = baseUrl,
             apiKey = apiKey.ifBlank { null },
             model = model,
             enableStreaming = enableStreaming,
+            isDefault = isDefault,
+            enableAdvancedParams = enableAdvancedParams
+        )
+    }
+
+    // 实时更新验证provider到ViewModel，用于isValid检查
+    LaunchedEffect(validationProvider) {
+        onProviderChange(validationProvider)
+    }
+
+    val handleSave = {
+        // 在保存时构建完整的provider，应用所有字段（包括高级参数）
+        val finalProvider = validationProvider.copy(
             maxTokens = maxTokens.toIntOrNull() ?: 128000,
             temperature = temperature.toDoubleOrNull() ?: 0.7,
-            isDefault = isDefault,
-            enableAdvancedParams = enableAdvancedParams,
             topP = topP.toDoubleOrNull() ?: 1.0,
             customParameters = customParameters.ifBlank { null }
         )
-        onProviderChange(newProvider)
+        onProviderChange(finalProvider)
+        onSave()
     }
 
     Scaffold(
@@ -148,8 +168,8 @@ private fun EditProviderForm(
                 },
                 actions = {
                     IconButton(
-                        onClick = onSave,
-                        enabled = provider.isValid
+                        onClick = { handleSave() },
+                        enabled = validationProvider.isValid
                     ) {
                         Icon(Icons.Default.Save, contentDescription = "保存")
                     }
@@ -379,8 +399,8 @@ private fun EditProviderForm(
             }
 
             Button(
-                onClick = onSave,
-                enabled = provider.isValid,
+                onClick = { handleSave() },
+                enabled = validationProvider.isValid,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("保存服务商")
