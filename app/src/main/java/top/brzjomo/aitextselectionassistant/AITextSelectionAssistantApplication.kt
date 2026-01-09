@@ -30,13 +30,8 @@ class AITextSelectionAssistantApplication : Application() {
             if (existingTemplates.isEmpty()) {
                 val presetTemplates = listOf(
                     PromptTemplate(
-                        title = "翻译成英文",
-                        content = "将以下文本翻译成英文：{{text}}",
-                        description = "将选中文本翻译为英文"
-                    ),
-                    PromptTemplate(
                         title = "翻译成中文",
-                        content = "将以下文本翻译成中文：{{text}}",
+                        content = "将以下文本翻译为简体中文，注意只需要输出翻译后的结果，不要额外解释：{{text}}",
                         description = "将选中文本翻译为中文"
                     ),
                     PromptTemplate(
