@@ -7,14 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import top.brzjomo.aitextselectionassistant.AITextSelectionAssistantApplication
 import top.brzjomo.aitextselectionassistant.data.local.ApiProvider
 import top.brzjomo.aitextselectionassistant.data.local.ProviderType
-import top.brzjomo.aitextselectionassistant.data.local.ApiConfig
-import top.brzjomo.aitextselectionassistant.data.local.UserPreferences
-import top.brzjomo.aitextselectionassistant.data.repository.ApiProviderRepository
 
 sealed interface ApiProviderUiState {
     data class Success(val providers: List<ApiProvider>) : ApiProviderUiState
@@ -41,7 +37,7 @@ data class ApiProviderEditState(
 )
 
 class ApiProviderViewModel(
-    private val context: Context
+    context: Context
 ) : ViewModel() {
     private val repository = AITextSelectionAssistantApplication.getAppContainer(context).apiProviderRepository
 
@@ -53,7 +49,6 @@ class ApiProviderViewModel(
 
     init {
         viewModelScope.launch {
-            // migrateFromOldConfig()  // 已禁用自动迁移，避免自动创建"从旧配置升级"服务商
             loadProviders()
         }
     }
@@ -86,13 +81,6 @@ class ApiProviderViewModel(
                 customParameters = null,
                 isDefault = false
             ),
-            isEditing = true
-        )
-    }
-
-    fun startEditProvider(provider: ApiProvider) {
-        _editState.value = ApiProviderEditState(
-            provider = provider.copy(),
             isEditing = true
         )
     }
@@ -155,52 +143,6 @@ class ApiProviderViewModel(
             } catch (e: Exception) {
                 // Handle error
             }
-        }
-    }
-
-    private suspend fun migrateFromOldConfig() {
-        val appContainer = AITextSelectionAssistantApplication.getAppContainer(context)
-        val userPreferences = appContainer.userPreferences
-
-        // 检查是否有现有的提供商
-        val existingProviders = repository.getAllProviders().firstOrNull() ?: emptyList()
-        if (existingProviders.isNotEmpty()) {
-            return  // 已经有提供商，无需迁移
-        }
-
-        // 获取旧的配置
-        val oldConfig = userPreferences.apiConfigFlow.firstOrNull() ?: ApiConfig()
-        if (oldConfig.apiKey.isBlank() && oldConfig.baseUrl.isBlank()) {
-            return  // 旧的配置也是空的，无需迁移
-        }
-
-        // 根据旧的配置创建新的提供商
-        val providerType = when {
-            oldConfig.baseUrl.contains("openai", ignoreCase = true) -> ProviderType.OPENAI
-            oldConfig.baseUrl.contains("deepseek", ignoreCase = true) -> ProviderType.DEEPSEEK
-            oldConfig.baseUrl.contains("ollama", ignoreCase = true) -> ProviderType.OLLAMA
-            else -> ProviderType.CUSTOM
-        }
-
-        val newProvider = ApiProvider(
-            name = "从旧配置迁移",
-            providerType = providerType,
-            baseUrl = oldConfig.baseUrl,
-            apiKey = oldConfig.apiKey.takeIf { it.isNotBlank() },
-            model = oldConfig.model,
-            enableStreaming = oldConfig.enableStreaming,
-            maxTokens = oldConfig.maxTokens,
-            temperature = oldConfig.temperature,
-            isDefault = true
-        )
-
-        try {
-            repository.insertProvider(newProvider)
-            // 迁移成功后清除旧的配置
-            userPreferences.clearApiConfig()
-        } catch (e: Exception) {
-            // 插入失败，保留旧配置以便下次重试
-            // 可以记录日志或忽略异常
         }
     }
 
