@@ -13,7 +13,7 @@ import top.brzjomo.aitextselectionassistant.ui.process.ProcessTextActivity
 class ClipboardMonitorService : AccessibilityService() {
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private var isEnabledByPref = true
+    private var isEnabledByPref = false
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -32,25 +32,60 @@ class ClipboardMonitorService : AccessibilityService() {
         // 忽略自己应用的事件，防止死循环
         if (event.packageName == packageName) return
 
-        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
-            val source = event.source ?: return
-
-            // 检查点击的元素是否是“复制”按钮
-            // 这里使用简单的关键词匹配，涵盖中文和英文
-            val text = source.text?.toString() ?: ""
-            val contentDescription = source.contentDescription?.toString() ?: ""
-
-            val isCopyAction = text.contains("复制", ignoreCase = true) ||
-                    text.equals("Copy", ignoreCase = true) ||
-                    contentDescription.contains("复制", ignoreCase = true) ||
-                    contentDescription.equals("Copy", ignoreCase = true)
-
-            if (isCopyAction) {
-                // 延迟一点时间，等待系统将文本写入剪贴板
+        when (event.eventType) {
+            AccessibilityEvent.TYPE_VIEW_CLICKED -> {
+                handleViewClicked(event)
+            }
+            AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED -> {
+                // 文本选择变化事件，可能是用户选择了文本
+                // 延迟检查剪贴板，用户可能在选择后立即复制
                 serviceScope.launch {
-                    delay(200)
+                    delay(300) // 给用户时间执行复制操作
                     checkClipboardAndLaunch()
                 }
+            }
+        }
+    }
+
+    private fun handleViewClicked(event: AccessibilityEvent) {
+        val source = event.source ?: return
+
+        // 检查点击的元素是否是“复制”按钮
+        // 这里使用更全面的关键词匹配
+        val text = source.text?.toString() ?: ""
+        val contentDescription = source.contentDescription?.toString() ?: ""
+        val className = source.className?.toString() ?: ""
+
+        // 扩展关键词列表，包括更多可能的复制按钮文本
+        val copyKeywords = listOf(
+            "复制", "Copy", "拷贝", "複製", "コピー", "복사",
+            "copy", "COPY", "복사하기", "Kopieren", "copier"
+        )
+
+        val isCopyAction = copyKeywords.any { keyword ->
+            text.contains(keyword, ignoreCase = true) ||
+                    contentDescription.contains(keyword, ignoreCase = true) ||
+                    className.contains("copy", ignoreCase = true) ||
+                    className.contains("clipboard", ignoreCase = true)
+        }
+
+        // 检查视图ID名称（如果有）
+        val viewIdResourceName = try {
+            source.viewIdResourceName
+        } catch (e: Exception) {
+            null
+        }
+
+        val isCopyById = viewIdResourceName?.let { idName ->
+            idName.contains("copy", ignoreCase = true) ||
+            idName.contains("clipboard", ignoreCase = true)
+        } ?: false
+
+        if (isCopyAction || isCopyById) {
+            // 延迟一点时间，等待系统将文本写入剪贴板
+            serviceScope.launch {
+                delay(200)
+                checkClipboardAndLaunch()
             }
         }
     }
