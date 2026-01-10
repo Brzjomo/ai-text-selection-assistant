@@ -18,6 +18,7 @@ class UserPreferences(
         private val ENABLE_STREAMING = booleanPreferencesKey("enable_streaming")
         private val MAX_TOKENS = stringPreferencesKey("max_tokens")
         private val TEMPERATURE = stringPreferencesKey("temperature")
+        private val ENABLE_AUTO_CLIPBOARD = booleanPreferencesKey("enable_auto_clipboard")
     }
 
     val apiConfigFlow: Flow<ApiConfig> = dataStore.data.map { preferences ->
@@ -31,6 +32,20 @@ class UserPreferences(
         )
     }
 
+    val appConfigFlow: Flow<AppConfig> = dataStore.data.map { preferences ->
+        AppConfig(
+            apiConfig = ApiConfig(
+                apiKey = preferences[API_KEY] ?: "",
+                baseUrl = preferences[BASE_URL] ?: "https://api.openai.com/v1/",
+                model = preferences[MODEL] ?: "gpt-4o-mini",
+                enableStreaming = preferences[ENABLE_STREAMING] ?: true,
+                maxTokens = preferences[MAX_TOKENS]?.toIntOrNull() ?: 128000,
+                temperature = preferences[TEMPERATURE]?.toDoubleOrNull() ?: 0.7
+            ),
+            enableAutoClipboard = preferences[ENABLE_AUTO_CLIPBOARD] ?: false
+        )
+    }
+
     suspend fun updateApiConfig(apiConfig: ApiConfig) {
         dataStore.edit { preferences ->
             preferences[API_KEY] = apiConfig.apiKey
@@ -39,6 +54,12 @@ class UserPreferences(
             preferences[ENABLE_STREAMING] = apiConfig.enableStreaming
             preferences[MAX_TOKENS] = apiConfig.maxTokens.toString()
             preferences[TEMPERATURE] = apiConfig.temperature.toString()
+        }
+    }
+
+    suspend fun setAutoClipboardEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[ENABLE_AUTO_CLIPBOARD] = enabled
         }
     }
 
@@ -64,3 +85,8 @@ data class ApiConfig(
 ) {
     val isValid: Boolean get() = apiKey.isNotBlank() && baseUrl.isNotBlank()
 }
+
+data class AppConfig(
+    val apiConfig: ApiConfig,
+    val enableAutoClipboard: Boolean
+)
