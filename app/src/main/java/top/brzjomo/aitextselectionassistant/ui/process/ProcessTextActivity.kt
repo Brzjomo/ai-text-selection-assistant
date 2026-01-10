@@ -52,6 +52,9 @@ class ProcessTextActivity : ComponentActivity() {
         }
     )
 
+    // 使用 MutableState 来持有选中的文本，以便 Compose 能响应变化
+    private val selectedTextState = mutableStateOf("")
+
     // 更新窗口位置
     private fun updateWindowPosition(dx: Int, dy: Int) {
         val windowParams = window.attributes
@@ -62,6 +65,8 @@ class ProcessTextActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        handleIntent(intent)
 
         // 获取选中的文本
         val selectedText = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString() ?: ""
@@ -89,7 +94,7 @@ class ProcessTextActivity : ComponentActivity() {
                 dynamicColor = false // 禁用动态颜色以确保主题切换效果明显
             ) {
                 ProcessTextScreen(
-                    selectedText = selectedText,
+                    selectedText = selectedTextState.value,
                     viewModel = viewModel,
                     darkTheme = darkTheme,
                     onToggleTheme = {
@@ -101,6 +106,23 @@ class ProcessTextActivity : ComponentActivity() {
                     }
                 )
             }
+        }
+    }
+
+    // 新增 onNewIntent 方法，处理后续的 Intent
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent) // 更新 Activity 的 Intent
+        handleIntent(intent) // 提取新文本并更新 State
+    }
+
+    // 统一处理 Intent 的逻辑
+    private fun handleIntent(intent: Intent?) {
+        val text = intent?.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
+        if (!text.isNullOrBlank()) {
+            selectedTextState.value = text
+            // 如果你希望每次新文本进来都自动重置 viewModel 状态，可以在这里调用
+            viewModel.onEvent(ProcessTextEvent.ClearError) // 举例
         }
     }
 }
