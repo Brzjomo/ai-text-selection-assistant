@@ -1,9 +1,11 @@
 package top.brzjomo.aitextselectionassistant.data.repository
 
 import android.util.Log
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import okhttp3.ResponseBody
 import retrofit2.Response
 import top.brzjomo.aitextselectionassistant.AppContainer
@@ -130,6 +132,6 @@ class TextRepository(private val appContainer: AppContainer) {
             Log.d(TAG, "收到chunk: '${chunk}' (长度=${chunk.length})")
             emit(chunk)
         }
-    }
+    }.flowOn(Dispatchers.IO) // 关键修改：在IO线程执行Flow
 
 }

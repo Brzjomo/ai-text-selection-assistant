@@ -118,11 +118,24 @@ class ProcessTextActivity : ComponentActivity() {
 
     // 统一处理 Intent 的逻辑
     private fun handleIntent(intent: Intent?) {
-        val text = intent?.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
+        if (intent == null) return
+
+        var text: String? = null
+
+        // 情况1：通过“处理文本”菜单启动
+        if (Intent.ACTION_PROCESS_TEXT == intent.action) {
+            text = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
+        }
+        // 情况2：通过“分享”菜单启动
+        else if (Intent.ACTION_SEND == intent.action && "text/plain" == intent.type) {
+            text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
+        }
+
+        // 如果获取到了文本，更新状态
         if (!text.isNullOrBlank()) {
             selectedTextState.value = text
-            // 如果你希望每次新文本进来都自动重置 viewModel 状态，可以在这里调用
-            viewModel.onEvent(ProcessTextEvent.ClearError) // 举例
+            // 重置 ViewModel 状态，清除之前的错误或结果
+            viewModel.onEvent(ProcessTextEvent.ClearError)
         }
     }
 }
